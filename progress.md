@@ -31,9 +31,9 @@
 > Platformun çalışmaya başladığı ve verilerin web-mobil arası aktığı dönem.
 
 ### Hafta 4: Akış (Feed) ve CRUD İşlemleri
-- [ ] Gönderi (Post) oluşturma
-- [ ] Gönderi silme
-- [ ] Ana akışta gönderilerin listelenmesi (Feed)
+- [x] Gönderi (Post) oluşturma
+- [x] Gönderi silme
+- [x] Ana akışta gönderilerin listelenmesi (Feed)
 
 ### Hafta 5: Etkileşim Sistemleri
 - [ ] Beğenme (Like) fonksiyonu — veritabanı bağlantısı

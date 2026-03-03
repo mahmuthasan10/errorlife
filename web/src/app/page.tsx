@@ -1,84 +1,9 @@
 import { Home, Briefcase, User, LogOut, Heart, MessageCircle, Bookmark, TrendingUp } from "lucide-react";
 import type { PostWithAuthor } from "@/types/database";
+import { createClient } from "@/utils/supabase/server";
 import { logout } from "./actions";
-
-// Dummy veriler — PostWithAuthor tipine uygun
-const dummyPosts: PostWithAuthor[] = [
-  {
-    id: "1",
-    user_id: "u1",
-    content:
-      "Next.js 16'da middleware ile Supabase Auth entegrasyonu yaparken cookie yönetimi gerçekten zorladı. Sonunda @supabase/ssr paketi ile çözdüm. Aynı sorunu yaşayan var mı?",
-    image_url: null,
-    like_count: 12,
-    comment_count: 3,
-    bookmark_count: 2,
-    created_at: "2026-03-02T10:30:00Z",
-    updated_at: "2026-03-02T10:30:00Z",
-    profiles: {
-      id: "u1",
-      username: "ahmet_dev",
-      display_name: "Ahmet Yılmaz",
-      avatar_url: null,
-      bio: "Full-stack developer",
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-01-01T00:00:00Z",
-    },
-    post_tags: [
-      { tags: { id: "t1", name: "Next.js", slug: "nextjs", created_at: "2026-01-01T00:00:00Z" } },
-      { tags: { id: "t2", name: "Supabase", slug: "supabase", created_at: "2026-01-01T00:00:00Z" } },
-    ],
-  },
-  {
-    id: "2",
-    user_id: "u2",
-    content:
-      "TypeScript strict mode açıkken 'any' kullanmak yerine generic type'lar ile çalışmak başta zor ama uzun vadede hayat kurtarıyor. Type safety > hız.",
-    image_url: null,
-    like_count: 24,
-    comment_count: 7,
-    bookmark_count: 5,
-    created_at: "2026-03-02T09:15:00Z",
-    updated_at: "2026-03-02T09:15:00Z",
-    profiles: {
-      id: "u2",
-      username: "elif_codes",
-      display_name: "Elif Kaya",
-      avatar_url: null,
-      bio: "TypeScript enthusiast",
-      created_at: "2026-01-15T00:00:00Z",
-      updated_at: "2026-01-15T00:00:00Z",
-    },
-    post_tags: [
-      { tags: { id: "t3", name: "TypeScript", slug: "typescript", created_at: "2026-01-01T00:00:00Z" } },
-    ],
-  },
-  {
-    id: "3",
-    user_id: "u3",
-    content:
-      "Tailwind CSS v4 ile gelen @theme inline özelliği CSS variable yönetimini çok kolaylaştırmış. Dark mode geçişleri artık çok daha temiz.",
-    image_url: null,
-    like_count: 18,
-    comment_count: 4,
-    bookmark_count: 3,
-    created_at: "2026-03-01T22:00:00Z",
-    updated_at: "2026-03-01T22:00:00Z",
-    profiles: {
-      id: "u3",
-      username: "can_frontend",
-      display_name: "Can Demir",
-      avatar_url: null,
-      bio: "Frontend developer & UI designer",
-      created_at: "2026-02-01T00:00:00Z",
-      updated_at: "2026-02-01T00:00:00Z",
-    },
-    post_tags: [
-      { tags: { id: "t4", name: "Tailwind", slug: "tailwind", created_at: "2026-01-01T00:00:00Z" } },
-      { tags: { id: "t5", name: "CSS", slug: "css", created_at: "2026-01-01T00:00:00Z" } },
-    ],
-  },
-];
+import CreatePostForm from "./_components/create-post-form";
+import DeletePostButton from "./_components/delete-post-button";
 
 const trendingTags = [
   { name: "React", slug: "react", postCount: 142 },
@@ -102,7 +27,40 @@ function formatRelativeTime(dateStr: string): string {
   return `${diffDays}g`;
 }
 
-export default function HomePage() {
+async function getPosts(): Promise<PostWithAuthor[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("posts")
+    .select(`
+      *,
+      profiles (*),
+      post_tags (
+        tags (*)
+      )
+    `)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return [];
+  }
+
+  return (data as PostWithAuthor[]) ?? [];
+}
+
+async function getCurrentUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
+export default async function HomePage() {
+  const [posts, currentUserId] = await Promise.all([
+    getPosts(),
+    getCurrentUserId(),
+  ]);
+
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl">
       {/* Sol Kolon — Navigasyon */}
@@ -143,31 +101,24 @@ export default function HomePage() {
           <h2 className="text-xl font-bold">Ana Sayfa</h2>
         </div>
 
-        {/* Sorun paylaş inputu */}
-        <div className="border-b border-zinc-800 px-4 py-4">
-          <div className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
-              <User size={20} className="text-zinc-400" />
-            </div>
-            <div className="flex-1">
-              <textarea
-                placeholder="Bir sorun mu yaşıyorsun? Paylaş..."
-                rows={2}
-                className="w-full resize-none bg-transparent text-lg text-white placeholder-zinc-600 outline-none"
-              />
-              <div className="flex items-center justify-end border-t border-zinc-800 pt-3">
-                <button className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90">
-                  Paylaş
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Sorun paylaş formu */}
+        <CreatePostForm />
 
         {/* Gönderi listesi */}
-        {dummyPosts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+        {posts.length === 0 ? (
+          <div className="px-4 py-12 text-center text-zinc-500">
+            <p className="text-lg">Henüz gönderi yok.</p>
+            <p className="mt-1 text-sm">İlk gönderiyi sen paylaş!</p>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              isOwner={currentUserId === post.user_id}
+            />
+          ))
+        )}
       </main>
 
       {/* Sağ Kolon — Trend Etiketler */}
@@ -219,7 +170,7 @@ function NavLink({
   );
 }
 
-function PostCard({ post }: { post: PostWithAuthor }) {
+function PostCard({ post, isOwner }: { post: PostWithAuthor; isOwner: boolean }) {
   return (
     <article className="border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
       <div className="flex gap-3">
@@ -231,7 +182,7 @@ function PostCard({ post }: { post: PostWithAuthor }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          {/* Kullanıcı bilgisi */}
+          {/* Kullanıcı bilgisi + Sil butonu */}
           <div className="flex items-center gap-2">
             <span className="truncate font-bold text-white">
               {post.profiles.display_name}
@@ -243,6 +194,7 @@ function PostCard({ post }: { post: PostWithAuthor }) {
             <span className="shrink-0 text-zinc-500">
               {formatRelativeTime(post.created_at)}
             </span>
+            {isOwner && <DeletePostButton postId={post.id} />}
           </div>
 
           {/* İçerik */}

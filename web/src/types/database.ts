@@ -28,6 +28,7 @@ export type Database = {
           bio?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       posts: {
         Row: {
@@ -60,6 +61,15 @@ export type Database = {
           bookmark_count?: number;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       jobs: {
         Row: {
@@ -89,6 +99,15 @@ export type Database = {
           status?: "open" | "in_progress" | "closed";
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "jobs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       tags: {
         Row: {
@@ -107,6 +126,7 @@ export type Database = {
           name?: string;
           slug?: string;
         };
+        Relationships: [];
       };
       post_tags: {
         Row: {
@@ -121,6 +141,22 @@ export type Database = {
           post_id?: string;
           tag_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "post_tags_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       job_tags: {
         Row: {
@@ -135,8 +171,28 @@ export type Database = {
           job_id?: string;
           tag_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "job_tags_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 };
 
