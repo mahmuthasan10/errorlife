@@ -15,14 +15,14 @@
 - [ ] Tablolar arası ilişkilerin (foreign key, many-to-many) tasarlanması
 
 ### Hafta 2: Ortam Kurulumları ve Kimlik Doğrulama
-- [ ] Next.js (Web) projesinin başlatılması
+- [x] Next.js (Web) projesinin başlatılması
 - [ ] React Native / Expo (Mobil) projesinin başlatılması
-- [ ] Supabase Auth entegrasyonu
-  - [ ] Web — Kayıt Ol / Giriş Yap
+- [x] Supabase Auth entegrasyonu
+  - [x] Web — Kayıt Ol / Giriş Yap
   - [ ] Mobil — Kayıt Ol / Giriş Yap
 
 ### Hafta 3: UI/UX İskeleti
-- [ ] X (Twitter) benzeri 3 kolonlu web arayüzünün Tailwind CSS ile kodlanması (dummy verilerle)
+- [x] X (Twitter) benzeri 3 kolonlu web arayüzünün Tailwind CSS ile kodlanması (dummy verilerle)
 - [ ] Mobil ana ekranın Tailwind CSS (NativeWind) ile kodlanması (dummy verilerle)
 
 ---
