@@ -188,6 +188,112 @@ export type Database = {
           },
         ];
       };
+      likes: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          post_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "likes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "likes_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          post_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      comments: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          content: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          content?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -201,6 +307,9 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type Job = Database["public"]["Tables"]["jobs"]["Row"];
 export type Tag = Database["public"]["Tables"]["tags"]["Row"];
+export type Like = Database["public"]["Tables"]["likes"]["Row"];
+export type Bookmark = Database["public"]["Tables"]["bookmarks"]["Row"];
+export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 
 // Post + Profile birleşik tip (feed'de kullanılacak)
 export type PostWithAuthor = Post & {
@@ -212,4 +321,9 @@ export type PostWithAuthor = Post & {
 export type JobWithAuthor = Job & {
   profiles: Profile;
   job_tags: { tags: Tag }[];
+};
+
+// Comment + Profile birleşik tip
+export type CommentWithAuthor = Comment & {
+  profiles: Profile;
 };

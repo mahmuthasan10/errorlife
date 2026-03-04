@@ -1,9 +1,10 @@
-import { Home, Briefcase, User, LogOut, Heart, MessageCircle, Bookmark, TrendingUp } from "lucide-react";
+import { Home, Briefcase, User, LogOut, TrendingUp } from "lucide-react";
 import type { PostWithAuthor } from "@/types/database";
 import { createClient } from "@/utils/supabase/server";
 import { logout } from "./actions";
 import CreatePostForm from "./_components/create-post-form";
 import DeletePostButton from "./_components/delete-post-button";
+import { LikeButton, BookmarkButton, CommentButton } from "./_components/interaction-buttons";
 
 const trendingTags = [
   { name: "React", slug: "react", postCount: 142 },
@@ -49,17 +50,41 @@ async function getPosts(): Promise<PostWithAuthor[]> {
   return (data as PostWithAuthor[]) ?? [];
 }
 
-async function getCurrentUserId(): Promise<string | null> {
+async function getCurrentUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
+  return user;
+}
+
+async function getUserInteractions(userId: string) {
+  const supabase = await createClient();
+
+  const [likesResult, bookmarksResult] = await Promise.all([
+    supabase.from("likes").select("post_id").eq("user_id", userId),
+    supabase.from("bookmarks").select("post_id").eq("user_id", userId),
+  ]);
+
+  const likedPostIds = new Set(
+    likesResult.data?.map((l) => l.post_id) ?? []
+  );
+  const bookmarkedPostIds = new Set(
+    bookmarksResult.data?.map((b) => b.post_id) ?? []
+  );
+
+  return { likedPostIds, bookmarkedPostIds };
 }
 
 export default async function HomePage() {
-  const [posts, currentUserId] = await Promise.all([
+  const [posts, currentUser] = await Promise.all([
     getPosts(),
-    getCurrentUserId(),
+    getCurrentUser(),
   ]);
+
+  const currentUserId = currentUser?.id ?? null;
+
+  const { likedPostIds, bookmarkedPostIds } = currentUserId
+    ? await getUserInteractions(currentUserId)
+    : { likedPostIds: new Set<string>(), bookmarkedPostIds: new Set<string>() };
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl">
@@ -116,6 +141,8 @@ export default async function HomePage() {
               key={post.id}
               post={post}
               isOwner={currentUserId === post.user_id}
+              isLiked={likedPostIds.has(post.id)}
+              isBookmarked={bookmarkedPostIds.has(post.id)}
             />
           ))
         )}
@@ -170,7 +197,17 @@ function NavLink({
   );
 }
 
-function PostCard({ post, isOwner }: { post: PostWithAuthor; isOwner: boolean }) {
+function PostCard({
+  post,
+  isOwner,
+  isLiked,
+  isBookmarked,
+}: {
+  post: PostWithAuthor;
+  isOwner: boolean;
+  isLiked: boolean;
+  isBookmarked: boolean;
+}) {
   return (
     <article className="border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
       <div className="flex gap-3">
@@ -217,19 +254,18 @@ function PostCard({ post, isOwner }: { post: PostWithAuthor; isOwner: boolean })
           )}
 
           {/* Etkileşim butonları */}
-          <div className="mt-3 flex max-w-md items-center justify-between text-zinc-500">
-            <button className="flex items-center gap-2 transition-colors hover:text-blue-400">
-              <MessageCircle size={18} />
-              <span className="text-sm">{post.comment_count}</span>
-            </button>
-            <button className="flex items-center gap-2 transition-colors hover:text-pink-500">
-              <Heart size={18} />
-              <span className="text-sm">{post.like_count}</span>
-            </button>
-            <button className="flex items-center gap-2 transition-colors hover:text-green-400">
-              <Bookmark size={18} />
-              <span className="text-sm">{post.bookmark_count}</span>
-            </button>
+          <div className="mt-3 flex max-w-md items-center justify-between">
+            <CommentButton postId={post.id} count={post.comment_count} />
+            <LikeButton
+              postId={post.id}
+              initialActive={isLiked}
+              initialCount={post.like_count}
+            />
+            <BookmarkButton
+              postId={post.id}
+              initialActive={isBookmarked}
+              initialCount={post.bookmark_count}
+            />
           </div>
         </div>
       </div>
