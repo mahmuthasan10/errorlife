@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import Link from "next/link";
 import { Heart, Bookmark, MessageCircle } from "lucide-react";
 import { toggleLike, toggleBookmark } from "@/app/actions/interactions";
 
@@ -98,12 +99,13 @@ export function CommentButton({
   count: number;
 }) {
   return (
-    <a
+    <Link
       href={`/post/${postId}`}
+      onClick={(e) => e.stopPropagation()}
       className="flex items-center gap-2 text-zinc-500 transition-colors hover:text-blue-400"
     >
       <MessageCircle size={18} />
       <span className="text-sm">{count}</span>
-    </a>
+    </Link>
   );
 }

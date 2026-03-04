@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Home, Briefcase, User, LogOut, TrendingUp } from "lucide-react";
 import type { PostWithAuthor } from "@/types/database";
 import { createClient } from "@/utils/supabase/server";
@@ -5,6 +6,7 @@ import { logout } from "./actions";
 import CreatePostForm from "./_components/create-post-form";
 import DeletePostButton from "./_components/delete-post-button";
 import { LikeButton, BookmarkButton, CommentButton } from "./_components/interaction-buttons";
+import ClickGuard from "./_components/click-guard";
 
 const trendingTags = [
   { name: "React", slug: "react", postCount: 142 },
@@ -209,8 +211,15 @@ function PostCard({
   isBookmarked: boolean;
 }) {
   return (
-    <article className="border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
-      <div className="flex gap-3">
+    <article className="relative border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
+      {/* Tıklanabilir kart overlay — modal açar */}
+      <Link
+        href={`/post/${post.id}`}
+        className="absolute inset-0 z-0"
+        aria-label="Gönderiyi aç"
+      />
+
+      <div className="relative z-10 flex gap-3">
         {/* Avatar */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
           <span className="text-sm font-bold text-zinc-300">
@@ -231,7 +240,11 @@ function PostCard({
             <span className="shrink-0 text-zinc-500">
               {formatRelativeTime(post.created_at)}
             </span>
-            {isOwner && <DeletePostButton postId={post.id} />}
+            {isOwner && (
+              <ClickGuard as="span">
+                <DeletePostButton postId={post.id} />
+              </ClickGuard>
+            )}
           </div>
 
           {/* İçerik */}
@@ -253,8 +266,8 @@ function PostCard({
             </div>
           )}
 
-          {/* Etkileşim butonları */}
-          <div className="mt-3 flex max-w-md items-center justify-between">
+          {/* Etkileşim butonları — relative z-10 ile Link'in üstünde */}
+          <ClickGuard className="relative z-10 mt-3 flex max-w-md items-center justify-between">
             <CommentButton postId={post.id} count={post.comment_count} />
             <LikeButton
               postId={post.id}
@@ -266,7 +279,7 @@ function PostCard({
               initialActive={isBookmarked}
               initialCount={post.bookmark_count}
             />
-          </div>
+          </ClickGuard>
         </div>
       </div>
     </article>

@@ -51,6 +51,7 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
   }
 
   revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
   return { error: null };
 }
 
@@ -99,6 +100,7 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
   }
 
   revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
   return { error: null };
 }
 
@@ -140,5 +142,6 @@ export async function addComment(
   }
 
   revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
   return { error: null };
 }
