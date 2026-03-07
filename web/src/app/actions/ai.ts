@@ -1,58 +1,100 @@
 "use server";
 
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+import { createClient } from "@/utils/supabase/server";
 
-const SYSTEM_PROMPT = `Sen ErrorLife adında yazılımcıların ve mühendislerin takıldığı bir platformun AI asistanısın.
-Kullanıcının girdiği taslak metni al; imla hatalarını düzelt, teknik jargona uygun hale getir, okunabilirliği artır ve sonuna bağlama uygun 1-3 teknik hashtag (#react, #bug gibi) ekle.
-İçeriğin ana fikrini veya verilen kod snippet'lerini ASLA değiştirme.
-Sadece iyileştirilmiş metni döndür, ekstra açıklama veya başlık ekleme.`;
+const optimizeSchema = z.object({
+  optimizedText: z
+    .string()
+    .describe(
+      "Yazım hataları giderilmiş, daha profesyonel ve net ifade edilmiş teknik sorun metni."
+    ),
+  suggestedTags: z
+    .array(z.string())
+    .max(3)
+    .describe(
+      "Bu sorunu en iyi tanımlayan max 3 adet teknoloji/kavram etiketi (ör: react, database-design, typescript)."
+    ),
+});
 
-export interface AIResult {
-  text: string | null;
+export type OptimizeResult = {
+  optimizedText: string;
+  suggestedTags: string[];
+} | null;
+
+export type AIActionResult = {
+  data: OptimizeResult;
   error: string | null;
-}
+};
 
-export async function improvePostContent(
+const SYSTEM_PROMPT = `Sen bir kıdemli yazılım mimarısın. Gelen metni teknik bir forumda (StackOverflow vb.) sorulmaya uygun, net, profesyonel ve anlaşılır hale getir. Metnin orijinal anlamını bozma. Sadece gerekli düzeltmeleri yap.`;
+
+export async function optimizePostContent(
   content: string
-): Promise<AIResult> {
-  const trimmed = content?.trim();
-
-  if (!trimmed) {
-    return { text: null, error: "İyileştirilecek metin boş olamaz." };
-  }
-
-  if (trimmed.length > 500) {
-    return { text: null, error: "Metin en fazla 500 karakter olabilir." };
-  }
+): Promise<AIActionResult> {
+  const supabase = await createClient();
 
   try {
-    const { text } = await generateText({
-      model: openai("gpt-4o-mini"),
-      system: SYSTEM_PROMPT,
-      prompt: trimmed,
-      maxTokens: 600,
-      temperature: 0.7,
-    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!text) {
-      return { text: null, error: "AI yanıt üretemedi. Tekrar deneyin." };
+    if (authError || !user) {
+      return {
+        data: null,
+        error: "Bu özelliği kullanmak için giriş yapmalısınız.",
+      };
     }
 
-    return { text, error: null };
+    const trimmed = content?.trim();
+
+    if (!trimmed) {
+      return { data: null, error: "İyileştirilecek metin boş olamaz." };
+    }
+
+    if (trimmed.length > 500) {
+      return {
+        data: null,
+        error: "Metin en fazla 500 karakter olabilir.",
+      };
+    }
+
+    const { object } = await generateObject({
+      model: openai("gpt-4o-mini"),
+      schema: optimizeSchema,
+      system: SYSTEM_PROMPT,
+      prompt: trimmed,
+    });
+
+    if (!object.optimizedText) {
+      return {
+        data: null,
+        error: "AI yanıt üretemedi. Lütfen tekrar deneyin.",
+      };
+    }
+
+    return {
+      data: {
+        optimizedText: object.optimizedText,
+        suggestedTags: object.suggestedTags,
+      },
+      error: null,
+    };
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : "Bilinmeyen hata";
+    const message = err instanceof Error ? err.message : "Bilinmeyen hata";
 
     if (message.includes("API key")) {
       return {
-        text: null,
+        data: null,
         error: "OpenAI API anahtarı yapılandırılmamış.",
       };
     }
 
     return {
-      text: null,
+      data: null,
       error: `AI servisi şu anda yanıt veremiyor: ${message}`,
     };
   }

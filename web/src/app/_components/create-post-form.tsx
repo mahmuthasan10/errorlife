@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { User, Sparkles, Loader2 } from "lucide-react";
+import { User, Sparkles, Loader2, X } from "lucide-react";
 import { createPost } from "@/app/actions";
-import { improvePostContent } from "@/app/actions/ai";
+import { optimizePostContent } from "@/app/actions/ai";
 
 export default function CreatePostForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [content, setContent] = useState("");
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isAIDisabled = isLoadingAI || content.trim().length < 10;
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -23,6 +26,7 @@ export default function CreatePostForm() {
         setError(result.error);
       } else {
         setContent("");
+        setSuggestedTags([]);
         formRef.current?.reset();
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
@@ -35,21 +39,23 @@ export default function CreatePostForm() {
     }
   }
 
-  async function handleAIImprove() {
-    if (!content.trim() || isLoadingAI) return;
+  async function handleAIOptimize() {
+    if (isAIDisabled) return;
 
     setError(null);
     setIsLoadingAI(true);
 
     try {
-      const result = await improvePostContent(content);
+      const result = await optimizePostContent(content);
 
       if (result.error) {
         setError(result.error);
-      } else if (result.text) {
-        setContent(result.text);
+      } else if (result.data) {
+        setContent(result.data.optimizedText);
+        setSuggestedTags(result.data.suggestedTags);
+
         if (textareaRef.current) {
-          textareaRef.current.value = result.text;
+          textareaRef.current.value = result.data.optimizedText;
           textareaRef.current.style.height = "auto";
           textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
@@ -59,6 +65,10 @@ export default function CreatePostForm() {
     } finally {
       setIsLoadingAI(false);
     }
+  }
+
+  function removeTag(tagToRemove: string) {
+    setSuggestedTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   }
 
   function handleTextareaInput(e: React.FormEvent<HTMLTextAreaElement>) {
@@ -84,8 +94,29 @@ export default function CreatePostForm() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onInput={handleTextareaInput}
-            className="w-full resize-none bg-transparent text-lg text-white placeholder-zinc-600 outline-none"
+            readOnly={isLoadingAI}
+            className="w-full resize-none bg-transparent text-lg text-white placeholder-zinc-600 outline-none disabled:opacity-50"
           />
+
+          {suggestedTags.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {suggestedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 px-2.5 py-1 text-xs font-medium text-violet-400"
+                >
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="rounded-full p-0.5 transition-colors hover:bg-violet-500/30"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
 
           {error && (
             <p className="mb-2 text-sm text-red-400">{error}</p>
@@ -94,8 +125,8 @@ export default function CreatePostForm() {
           <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
             <button
               type="button"
-              onClick={handleAIImprove}
-              disabled={isLoadingAI || !content.trim()}
+              onClick={handleAIOptimize}
+              disabled={isAIDisabled}
               className="flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-violet-500/50 hover:text-violet-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isLoadingAI ? (
@@ -106,7 +137,7 @@ export default function CreatePostForm() {
               ) : (
                 <>
                   <Sparkles size={14} />
-                  <span>AI ile İyileştir</span>
+                  <span>✨ AI ile İyileştir</span>
                 </>
               )}
             </button>
