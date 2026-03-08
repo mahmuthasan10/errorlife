@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Heart, Bookmark, MessageCircle } from "lucide-react";
 import { toggleLike, toggleBookmark } from "@/app/actions/interactions";
@@ -17,17 +17,22 @@ export function LikeButton({
   initialCount,
 }: ToggleButtonProps) {
   const [isPending, startTransition] = useTransition();
-  const [optimistic, setOptimistic] = useOptimistic(
-    { active: initialActive, count: initialCount },
-    (current) => ({
-      active: !current.active,
-      count: current.active ? current.count - 1 : current.count + 1,
-    })
-  );
+  const [active, setActive] = useState(initialActive);
+  const [count, setCount] = useState(initialCount);
+
+  // Realtime/revalidation ile gelen prop değişikliklerini sadece idle durumda senkronize et
+  useEffect(() => {
+    if (!isPending) {
+      setActive(initialActive);
+      setCount(initialCount);
+    }
+  }, [initialActive, initialCount, isPending]);
 
   function handleClick() {
+    setCount((prev) => (active ? prev - 1 : prev + 1));
+    setActive((prev) => !prev);
+
     startTransition(async () => {
-      setOptimistic(null);
       await toggleLike(postId);
     });
   }
@@ -37,16 +42,11 @@ export function LikeButton({
       onClick={handleClick}
       disabled={isPending}
       className={`flex items-center gap-2 transition-colors ${
-        optimistic.active
-          ? "text-pink-500"
-          : "text-zinc-500 hover:text-pink-500"
+        active ? "text-pink-500" : "text-zinc-500 hover:text-pink-500"
       }`}
     >
-      <Heart
-        size={18}
-        className={optimistic.active ? "fill-pink-500" : ""}
-      />
-      <span className="text-sm">{optimistic.count}</span>
+      <Heart size={18} className={active ? "fill-pink-500" : ""} />
+      <span className="text-sm">{count}</span>
     </button>
   );
 }
@@ -57,17 +57,21 @@ export function BookmarkButton({
   initialCount,
 }: ToggleButtonProps) {
   const [isPending, startTransition] = useTransition();
-  const [optimistic, setOptimistic] = useOptimistic(
-    { active: initialActive, count: initialCount },
-    (current) => ({
-      active: !current.active,
-      count: current.active ? current.count - 1 : current.count + 1,
-    })
-  );
+  const [active, setActive] = useState(initialActive);
+  const [count, setCount] = useState(initialCount);
+
+  useEffect(() => {
+    if (!isPending) {
+      setActive(initialActive);
+      setCount(initialCount);
+    }
+  }, [initialActive, initialCount, isPending]);
 
   function handleClick() {
+    setCount((prev) => (active ? prev - 1 : prev + 1));
+    setActive((prev) => !prev);
+
     startTransition(async () => {
-      setOptimistic(null);
       await toggleBookmark(postId);
     });
   }
@@ -77,16 +81,11 @@ export function BookmarkButton({
       onClick={handleClick}
       disabled={isPending}
       className={`flex items-center gap-2 transition-colors ${
-        optimistic.active
-          ? "text-green-400"
-          : "text-zinc-500 hover:text-green-400"
+        active ? "text-green-400" : "text-zinc-500 hover:text-green-400"
       }`}
     >
-      <Bookmark
-        size={18}
-        className={optimistic.active ? "fill-green-400" : ""}
-      />
-      <span className="text-sm">{optimistic.count}</span>
+      <Bookmark size={18} className={active ? "fill-green-400" : ""} />
+      <span className="text-sm">{count}</span>
     </button>
   );
 }

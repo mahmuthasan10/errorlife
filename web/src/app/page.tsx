@@ -1,12 +1,9 @@
-import Link from "next/link";
 import { Home, Briefcase, User, LogOut, TrendingUp } from "lucide-react";
-import type { PostWithAuthor } from "@/types/database";
 import { createClient } from "@/utils/supabase/server";
+import type { PostWithAuthor } from "@/types/database";
 import { logout } from "./actions";
 import CreatePostForm from "./_components/create-post-form";
-import DeletePostButton from "./_components/delete-post-button";
-import { LikeButton, BookmarkButton, CommentButton } from "./_components/interaction-buttons";
-import ClickGuard from "./_components/click-guard";
+import RealtimeFeed from "./_components/realtime-feed";
 
 const trendingTags = [
   { name: "React", slug: "react", postCount: 142 },
@@ -15,20 +12,6 @@ const trendingTags = [
   { name: "Supabase", slug: "supabase", postCount: 65 },
   { name: "TailwindCSS", slug: "tailwindcss", postCount: 53 },
 ];
-
-function formatRelativeTime(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMin < 1) return "az önce";
-  if (diffMin < 60) return `${diffMin}dk`;
-  if (diffHours < 24) return `${diffHours}sa`;
-  return `${diffDays}g`;
-}
 
 async function getPosts(): Promise<PostWithAuthor[]> {
   const supabase = await createClient();
@@ -131,23 +114,13 @@ export default async function HomePage() {
         {/* Sorun paylaş formu */}
         <CreatePostForm />
 
-        {/* Gönderi listesi */}
-        {posts.length === 0 ? (
-          <div className="px-4 py-12 text-center text-zinc-500">
-            <p className="text-lg">Henüz gönderi yok.</p>
-            <p className="mt-1 text-sm">İlk gönderiyi sen paylaş!</p>
-          </div>
-        ) : (
-          posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isOwner={currentUserId === post.user_id}
-              isLiked={likedPostIds.has(post.id)}
-              isBookmarked={bookmarkedPostIds.has(post.id)}
-            />
-          ))
-        )}
+        {/* Gönderi listesi — Realtime */}
+        <RealtimeFeed
+          initialPosts={posts}
+          currentUserId={currentUserId}
+          likedPostIds={Array.from(likedPostIds)}
+          bookmarkedPostIds={Array.from(bookmarkedPostIds)}
+        />
       </main>
 
       {/* Sağ Kolon — Trend Etiketler */}
@@ -199,89 +172,3 @@ function NavLink({
   );
 }
 
-function PostCard({
-  post,
-  isOwner,
-  isLiked,
-  isBookmarked,
-}: {
-  post: PostWithAuthor;
-  isOwner: boolean;
-  isLiked: boolean;
-  isBookmarked: boolean;
-}) {
-  return (
-    <article className="relative border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
-      {/* Tıklanabilir kart overlay — modal açar */}
-      <Link
-        href={`/post/${post.id}`}
-        className="absolute inset-0 z-0"
-        aria-label="Gönderiyi aç"
-      />
-
-      <div className="relative z-10 flex gap-3">
-        {/* Avatar */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
-          <span className="text-sm font-bold text-zinc-300">
-            {post.profiles.display_name.charAt(0).toUpperCase()}
-          </span>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          {/* Kullanıcı bilgisi + Sil butonu */}
-          <div className="flex items-center gap-2">
-            <span className="truncate font-bold text-white">
-              {post.profiles.display_name}
-            </span>
-            <span className="truncate text-zinc-500">
-              @{post.profiles.username}
-            </span>
-            <span className="text-zinc-600">·</span>
-            <span className="shrink-0 text-zinc-500">
-              {formatRelativeTime(post.created_at)}
-            </span>
-            {isOwner && (
-              <ClickGuard as="span">
-                <DeletePostButton postId={post.id} />
-              </ClickGuard>
-            )}
-          </div>
-
-          {/* İçerik */}
-          <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
-            {post.content}
-          </p>
-
-          {/* Etiketler */}
-          {post.post_tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {post.post_tags.map(({ tags }) => (
-                <span
-                  key={tags.id}
-                  className="rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700"
-                >
-                  #{tags.name}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Etkileşim butonları — relative z-10 ile Link'in üstünde */}
-          <ClickGuard className="relative z-10 mt-3 flex max-w-md items-center justify-between">
-            <CommentButton postId={post.id} count={post.comment_count} />
-            <LikeButton
-              postId={post.id}
-              initialActive={isLiked}
-              initialCount={post.like_count}
-            />
-            <BookmarkButton
-              postId={post.id}
-              initialActive={isBookmarked}
-              initialCount={post.bookmark_count}
-            />
-          </ClickGuard>
-        </div>
-      </div>
-    </article>
-  );
-}
