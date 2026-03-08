@@ -36,13 +36,13 @@
 - [x] Ana akışta gönderilerin listelenmesi (Feed)
 
 ### Hafta 5: Etkileşim Sistemleri
-- [ ] Beğenme (Like) fonksiyonu — veritabanı bağlantısı
-- [ ] Yorum Yapma (Comment) fonksiyonu — veritabanı bağlantısı
-- [ ] Kaydetme (Bookmark) fonksiyonu — veritabanı bağlantısı
+- [x] Beğenme (Like) fonksiyonu — veritabanı bağlantısı
+- [x] Yorum Yapma (Comment) fonksiyonu — veritabanı bağlantısı
+- [x] Kaydetme (Bookmark) fonksiyonu — veritabanı bağlantısı
 
 ### Hafta 6: Gerçek Zamanlı Senkronizasyon (Realtime)
-- [ ] Supabase Realtime entegrasyonu
-- [ ] Web'de atılan gönderinin sayfayı yenilemeden mobildeki akışa anında düşmesi
+- [] Supabase Realtime entegrasyonu
+- [] Web'de atılan gönderinin sayfayı yenilemeden mobildeki akışa anında düşmesi
 - [ ] Mobilde atılan gönderinin web akışına anında yansıması
 
 ### Hafta 7: Bildirim Altyapısı
@@ -55,9 +55,9 @@
 > ErrorLife'ı sıradan bir platform olmaktan çıkarıp zeki bir sisteme dönüştüren aşama.
 
 ### Hafta 8: AI Entegrasyonu (Hibrit Model)
-- [ ] OpenAI / Anthropic API bağlantısının kurulması
-- [ ] Karmaşık metin düzenleme servisinin yazılması
-- [ ] Metne uygun meslek/kategori etiketi dönen servisin yazılması (JSON formatında)
+- [x] OpenAI / Anthropic API bağlantısının kurulması
+- [x] Karmaşık metin düzenleme servisinin yazılması
+- [x] Metne uygun meslek/kategori etiketi dönen servisin yazılması (JSON formatında)
 
 ### Hafta 9: AI Onay Ekranı ve Etiketleme
 - [ ] Gönderi paylaşılmadan önce AI önizleme ekranının oluşturulması
