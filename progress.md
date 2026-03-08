@@ -6,17 +6,17 @@
 > Projenin temelinin atıldığı ve veritabanı mimarisinin kurgulandığı aşama.
 
 ### Hafta 1: Proje Analizi ve Veritabanı Şeması
-- [ ] Gereksinimlerin belirlenmesi
-- [ ] Supabase üzerinde PostgreSQL tablolarının tasarlanması
-  - [ ] `Users` tablosu
-  - [ ] `Posts` tablosu
-  - [ ] `Jobs` tablosu
-  - [ ] `Tags` tablosu
-- [ ] Tablolar arası ilişkilerin (foreign key, many-to-many) tasarlanması
+- [x] Gereksinimlerin belirlenmesi
+- [x] Supabase üzerinde PostgreSQL tablolarının tasarlanması
+  - [x] `Users` tablosu
+  - [x] `Posts` tablosu
+  - [x] `Jobs` tablosu
+  - [x] `Tags` tablosu
+- [x] Tablolar arası ilişkilerin (foreign key, many-to-many) tasarlanması
 
 ### Hafta 2: Ortam Kurulumları ve Kimlik Doğrulama
 - [x] Next.js (Web) projesinin başlatılması
-- [ ] React Native / Expo (Mobil) projesinin başlatılması
+- [x] React Native / Expo (Mobil) projesinin başlatılması
 - [x] Supabase Auth entegrasyonu
   - [x] Web — Kayıt Ol / Giriş Yap
   - [ ] Mobil — Kayıt Ol / Giriş Yap
@@ -41,8 +41,8 @@
 - [x] Kaydetme (Bookmark) fonksiyonu — veritabanı bağlantısı
 
 ### Hafta 6: Gerçek Zamanlı Senkronizasyon (Realtime)
-- [] Supabase Realtime entegrasyonu
-- [] Web'de atılan gönderinin sayfayı yenilemeden mobildeki akışa anında düşmesi
+- [ ] Supabase Realtime entegrasyonu
+- [ ] Web'de atılan gönderinin sayfayı yenilemeden mobildeki akışa anında düşmesi
 - [ ] Mobilde atılan gönderinin web akışına anında yansıması
 
 ### Hafta 7: Bildirim Altyapısı
