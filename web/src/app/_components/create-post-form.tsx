@@ -21,6 +21,10 @@ export default function CreatePostForm() {
     setLoading(true);
 
     try {
+      if (suggestedTags.length > 0) {
+        formData.set("tags", JSON.stringify(suggestedTags));
+      }
+
       const result = await createPost(formData);
       if (result.error) {
         setError(result.error);

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { slugify } from "@/lib/utils";
 
 export type ActionResult = {
   error: string | null;
@@ -12,6 +13,8 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
 
   const content = (formData.get("content") as string)?.trim();
+  const tagsRaw = formData.get("tags") as string | null;
+  const tags: string[] = tagsRaw ? JSON.parse(tagsRaw) : [];
 
   if (!content) {
     return { error: "Gönderi içeriği boş olamaz." };
@@ -31,13 +34,16 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
       return { error: "Gönderi paylaşmak için giriş yapmalısınız." };
     }
 
-    const { error: insertError } = await supabase.from("posts").insert({
-      user_id: user.id,
-      content,
+    const tagObjects = tags.map((name) => ({ name, slug: slugify(name) }));
+
+    const { error: rpcError } = await supabase.rpc("create_post_with_tags", {
+      p_user_id: user.id,
+      p_content: content,
+      p_tags: tagObjects,
     });
 
-    if (insertError) {
-      return { error: `Gönderi paylaşılamadı: ${insertError.message}` };
+    if (rpcError) {
+      return { error: `Gönderi paylaşılamadı: ${rpcError.message}` };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };

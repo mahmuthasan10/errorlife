@@ -296,7 +296,17 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_post_with_tags: {
+        Args: {
+          p_user_id: string;
+          p_content: string;
+          p_image_url?: string | null;
+          p_tags?: unknown;
+        };
+        Returns: string;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
