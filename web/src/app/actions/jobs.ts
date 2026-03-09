@@ -7,6 +7,20 @@ import type { ActionResult } from "../actions";
 
 // ── Zod Şemaları ──────────────────────────────────────────────
 
+const createBidSchema = z.object({
+  amount: z
+    .number()
+    .min(1, "Teklif tutarı en az 1 TL olmalıdır."),
+  estimatedDays: z
+    .number()
+    .min(1, "Tahmini süre en az 1 gün olmalıdır."),
+  coverLetter: z
+    .string()
+    .trim()
+    .min(10, "Kapak yazısı en az 10 karakter olmalıdır.")
+    .max(2000, "Kapak yazısı en fazla 2000 karakter olabilir."),
+});
+
 const createJobSchema = z.object({
   title: z
     .string()
@@ -82,9 +96,7 @@ export async function createJob(formData: FormData): Promise<ActionResult> {
 
 export async function createBid(
   jobId: string,
-  amount: number,
-  estimatedDays: number,
-  coverLetter: string
+  formData: FormData
 ): Promise<ActionResult> {
   const supabase = await createClient();
 
@@ -98,24 +110,73 @@ export async function createBid(
       return { error: "Teklif vermek için giriş yapmalısınız." };
     }
 
-    if (amount <= 0) {
-      return { error: "Teklif tutarı sıfırdan büyük olmalıdır." };
+    // FormData → raw values
+    const rawAmount = formData.get("amount") as string | null;
+    const rawDays = formData.get("estimatedDays") as string | null;
+    const rawCover = formData.get("coverLetter") as string | null;
+
+    // Zod validasyonu
+    const parsed = createBidSchema.safeParse({
+      amount: rawAmount ? parseFloat(rawAmount) : 0,
+      estimatedDays: rawDays ? parseInt(rawDays, 10) : 0,
+      coverLetter: rawCover ?? "",
+    });
+
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0];
+      return { error: firstError.message };
     }
 
-    if (estimatedDays <= 0) {
-      return { error: "Tahmini süre en az 1 gün olmalıdır." };
+    const { amount, estimatedDays, coverLetter } = parsed.data;
+
+    // Daha önce bu ilana teklif verilmiş mi?
+    const { data: existingBid, error: lookupError } = await supabase
+      .from("bids")
+      .select("id, status")
+      .eq("job_id", jobId)
+      .eq("expert_id", user.id)
+      .maybeSingle();
+
+    if (lookupError) {
+      return { error: `Teklif kontrol edilemedi: ${lookupError.message}` };
     }
 
-    if (!coverLetter.trim() || coverLetter.length > 2000) {
-      return { error: "Ön yazı 1-2000 karakter arasında olmalıdır." };
+    if (existingBid) {
+      // (a) pending veya accepted → engelle
+      if (existingBid.status === "pending" || existingBid.status === "accepted") {
+        return { error: "Zaten aktif bir teklifiniz var." };
+      }
+
+      // (b) rejected → mevcut teklifi güncelle ve tekrar pending yap
+      if (existingBid.status === "rejected") {
+        const { error: updateError } = await supabase
+          .from("bids")
+          .update({
+            amount,
+            estimated_days: estimatedDays,
+            cover_letter: coverLetter,
+            status: "pending" as const,
+          })
+          .eq("id", existingBid.id);
+
+        if (updateError) {
+          console.error("Re-bid Update Error:", updateError);
+          return { error: `Teklif güncellenemedi: ${updateError.message}` };
+        }
+
+        revalidatePath(`/jobs/${jobId}`);
+        revalidatePath("/jobs");
+        return { error: null };
+      }
     }
 
+    // (c) Hiç teklif yoksa → yeni INSERT
     const { error: insertError } = await supabase.from("bids").insert({
       job_id: jobId,
       expert_id: user.id,
       amount,
       estimated_days: estimatedDays,
-      cover_letter: coverLetter.trim(),
+      cover_letter: coverLetter,
     });
 
     if (insertError) {
@@ -128,6 +189,112 @@ export async function createBid(
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
   }
 
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/jobs");
+  return { error: null };
+}
+
+export async function acceptBid(
+  bidId: string,
+  jobId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Bu işlem için giriş yapmalısınız." };
+    }
+
+    // GÜVENLİK: İlan sahibi kontrolü
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("user_id, status")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return { error: "İlan bulunamadı." };
+    }
+
+    if (job.user_id !== user.id) {
+      return { error: "Yalnızca ilan sahibi teklif kabul edebilir." };
+    }
+
+    if (job.status !== "open") {
+      return { error: "Bu ilan artık teklif kabul etmiyor." };
+    }
+
+    // Teklifi kabul et (DB trigger gerisini halledecek)
+    const { error: updateError } = await supabase
+      .from("bids")
+      .update({ status: "accepted" as const })
+      .eq("id", bidId)
+      .eq("job_id", jobId);
+
+    if (updateError) {
+      console.error("Accept Bid Error:", updateError);
+      return { error: updateError.message };
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/jobs");
+  return { error: null };
+}
+
+export async function rejectBid(
+  bidId: string,
+  jobId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Bu işlem için giriş yapmalısınız." };
+    }
+
+    // GÜVENLİK: İlan sahibi kontrolü
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("user_id")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return { error: "İlan bulunamadı." };
+    }
+
+    if (job.user_id !== user.id) {
+      return { error: "Yalnızca ilan sahibi teklif reddedebilir." };
+    }
+
+    const { error: updateError } = await supabase
+      .from("bids")
+      .update({ status: "rejected" as const })
+      .eq("id", bidId)
+      .eq("job_id", jobId);
+
+    if (updateError) {
+      console.error("Reject Bid Error:", updateError);
+      return { error: updateError.message };
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
   revalidatePath("/jobs");
   return { error: null };
 }

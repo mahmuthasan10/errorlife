@@ -70,12 +70,12 @@
 - [x] Kullanıcı onay mekanizmasının entegrasyonu
 
 ### Hafta 10: "Armut" Modeli (İlan Sistemi)
-- [ ] Yardım ilanı / iş talebi oluşturma formu
-- [ ] İlanların ayrı bir sekmede listelenmesi
-- [ ] İlan detay sayfası
+- [x] Yardım ilanı / iş talebi oluşturma formu
+- [x] İlanların ayrı bir sekmede listelenmesi
+- [x] İlan detay sayfası
 
 ### Hafta 11: Teklif ve Arama Sistemi
-- [ ] İlanlara çözüm ve fiyat teklifi sunma mekanizması
+- [x] İlanlara çözüm ve fiyat teklifi sunma mekanizması
 - [ ] Metin bazlı arama (Search) özelliği
 - [ ] Etiketlere göre filtreleme özelliği
 

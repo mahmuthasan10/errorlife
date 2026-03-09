@@ -386,6 +386,11 @@ export type BidWithExpert = Bid & {
   profiles: Profile;
 };
 
+// Bid + Job birleşik tip (kullanıcının teklifleri listesi)
+export type BidWithJob = Bid & {
+  jobs: Job & { profiles: Profile };
+};
+
 // Comment + Profile birleşik tip
 export type CommentWithAuthor = Comment & {
   profiles: Profile;
