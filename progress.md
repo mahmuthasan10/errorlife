@@ -60,9 +60,9 @@
 - [x] Metne uygun meslek/kategori etiketi dönen servisin yazılması (JSON formatında)
 
 ### Hafta 9: AI Onay Ekranı ve Etiketleme
-- [ ] Gönderi paylaşılmadan önce AI önizleme ekranının oluşturulması
-  - [ ] "Bunu mu demek istedin? [Düzenlenmiş Metin] — [Etiket]" arayüzü
-- [ ] Kullanıcı onay mekanizmasının entegrasyonu
+- [x] Gönderi paylaşılmadan önce AI önizleme ekranının oluşturulması
+  - [x] "Bunu mu demek istedin? [Düzenlenmiş Metin] — [Etiket]" arayüzü
+- [x] Kullanıcı onay mekanizmasının entegrasyonu
 
 ### Hafta 10: "Armut" Modeli (İlan Sistemi)
 - [ ] Yardım ilanı / iş talebi oluşturma formu
