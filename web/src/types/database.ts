@@ -158,6 +158,53 @@ export type Database = {
           },
         ];
       };
+      bids: {
+        Row: {
+          id: string;
+          job_id: string;
+          expert_id: string;
+          amount: number;
+          estimated_days: number;
+          cover_letter: string;
+          status: "pending" | "accepted" | "rejected";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          expert_id: string;
+          amount: number;
+          estimated_days: number;
+          cover_letter: string;
+          status?: "pending" | "accepted" | "rejected";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          estimated_days?: number;
+          cover_letter?: string;
+          status?: "pending" | "accepted" | "rejected";
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bids_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bids_expert_id_fkey";
+            columns: ["expert_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_tags: {
         Row: {
           job_id: string;
@@ -317,6 +364,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type Job = Database["public"]["Tables"]["jobs"]["Row"];
 export type Tag = Database["public"]["Tables"]["tags"]["Row"];
+export type Bid = Database["public"]["Tables"]["bids"]["Row"];
 export type Like = Database["public"]["Tables"]["likes"]["Row"];
 export type Bookmark = Database["public"]["Tables"]["bookmarks"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
@@ -331,6 +379,11 @@ export type PostWithAuthor = Post & {
 export type JobWithAuthor = Job & {
   profiles: Profile;
   job_tags: { tags: Tag }[];
+};
+
+// Bid + Profile birleşik tip
+export type BidWithExpert = Bid & {
+  profiles: Profile;
 };
 
 // Comment + Profile birleşik tip
