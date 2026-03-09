@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import type { PostWithAuthor } from "@/types/database";
@@ -42,6 +42,22 @@ export default function RealtimeFeed({
   const [posts, setPosts] = useState<PostWithAuthor[]>(initialPosts);
   const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set(likedPostIds));
   const [bookmarkedSet, setBookmarkedSet] = useState<Set<string>>(() => new Set(bookmarkedPostIds));
+
+  // Server revalidation'dan gelen prop değişikliklerini state'e senkronize et
+  const postsKey = useMemo(() => initialPosts.map((p) => `${p.id}:${p.updated_at}`).join(), [initialPosts]);
+  useEffect(() => {
+    setPosts(initialPosts);
+  }, [postsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const likedKey = useMemo(() => likedPostIds.join(), [likedPostIds]);
+  useEffect(() => {
+    setLikedSet(new Set(likedPostIds));
+  }, [likedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const bookmarkedKey = useMemo(() => bookmarkedPostIds.join(), [bookmarkedPostIds]);
+  useEffect(() => {
+    setBookmarkedSet(new Set(bookmarkedPostIds));
+  }, [bookmarkedKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const supabase = createClient();
@@ -109,14 +125,24 @@ export default function RealtimeFeed({
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "likes" },
-        (payload) => {
+        async (payload) => {
           const old = payload.old as { user_id?: string; post_id?: string };
-          if (old.user_id === currentUserId && old.post_id) {
+          if (old.post_id && old.user_id === currentUserId) {
+            // REPLICA IDENTITY FULL — tam veri var, doğrudan kaldır
             setLikedSet((prev) => {
               const next = new Set(prev);
               next.delete(old.post_id!);
               return next;
             });
+          } else if (currentUserId) {
+            // REPLICA IDENTITY DEFAULT — sadece id gelir, kullanıcının beğenilerini yeniden çek
+            const { data } = await supabase
+              .from("likes")
+              .select("post_id")
+              .eq("user_id", currentUserId);
+            if (data) {
+              setLikedSet(new Set(data.map((l) => l.post_id)));
+            }
           }
         }
       )
@@ -133,14 +159,22 @@ export default function RealtimeFeed({
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "bookmarks" },
-        (payload) => {
+        async (payload) => {
           const old = payload.old as { user_id?: string; post_id?: string };
-          if (old.user_id === currentUserId && old.post_id) {
+          if (old.post_id && old.user_id === currentUserId) {
             setBookmarkedSet((prev) => {
               const next = new Set(prev);
               next.delete(old.post_id!);
               return next;
             });
+          } else if (currentUserId) {
+            const { data } = await supabase
+              .from("bookmarks")
+              .select("post_id")
+              .eq("user_id", currentUserId);
+            if (data) {
+              setBookmarkedSet(new Set(data.map((b) => b.post_id)));
+            }
           }
         }
       )

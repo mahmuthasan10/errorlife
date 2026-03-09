@@ -37,12 +37,12 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
         return { error: `Beğeni kaldırılamadı: ${error.message}` };
       }
     } else {
-      // Beğeni ekle
+      // Beğeni ekle — 23505 (unique_violation) idempotent: zaten beğenilmişse sessizce geç
       const { error } = await supabase
         .from("likes")
         .insert({ user_id: user.id, post_id: postId });
 
-      if (error) {
+      if (error && error.code !== "23505") {
         return { error: `Beğeni eklenemedi: ${error.message}` };
       }
     }
@@ -87,11 +87,12 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
         return { error: `Yer imi kaldırılamadı: ${error.message}` };
       }
     } else {
+      // Bookmark ekle — 23505 (unique_violation) idempotent: zaten kaydedilmişse sessizce geç
       const { error } = await supabase
         .from("bookmarks")
         .insert({ user_id: user.id, post_id: postId });
 
-      if (error) {
+      if (error && error.code !== "23505") {
         return { error: `Yer imi eklenemedi: ${error.message}` };
       }
     }

@@ -41,7 +41,12 @@
 - [x] Kaydetme (Bookmark) fonksiyonu — veritabanı bağlantısı
 
 ### Hafta 6: Gerçek Zamanlı Senkronizasyon (Realtime)
-- [ ] Supabase Realtime entegrasyonu
+- [x] Supabase Realtime entegrasyonu
+  - [x] `RealtimeFeed` client component — posts INSERT/UPDATE/DELETE dinleme
+  - [x] likes/bookmarks tabloları Realtime subscription (cross-tab sync)
+  - [x] useOptimistic → useState + isPending guard (flicker önleme)
+  - [x] Server action idempotent yapısı (23505 unique violation handling)
+  - [x] REPLICA IDENTITY FULL — likes/bookmarks DELETE event desteği
 - [ ] Web'de atılan gönderinin sayfayı yenilemeden mobildeki akışa anında düşmesi
 - [ ] Mobilde atılan gönderinin web akışına anında yansıması
 
