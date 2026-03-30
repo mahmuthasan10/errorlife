@@ -381,6 +381,78 @@ export type Database = {
           },
         ];
       };
+      chats: {
+        Row: {
+          id: string;
+          user1_id: string;
+          user2_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user1_id: string;
+          user2_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user1_id?: string;
+          user2_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chats_user1_id_fkey";
+            columns: ["user1_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chats_user2_id_fkey";
+            columns: ["user2_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      messages: {
+        Row: {
+          id: string;
+          chat_id: string;
+          sender_id: string;
+          content: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          sender_id: string;
+          content: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          content?: string;
+          is_read?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey";
+            columns: ["chat_id"];
+            isOneToOne: false;
+            referencedRelation: "chats";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -440,4 +512,13 @@ export type CommentWithAuthor = Comment & {
 // Profil sayfası için birleşik tip
 export type UserProfile = Profile & {
   isFollowing: boolean;
+};
+
+// Chat + karşı tarafın profili + son mesaj
+export type Chat = Database["public"]["Tables"]["chats"]["Row"];
+export type Message = Database["public"]["Tables"]["messages"]["Row"];
+
+export type ChatWithDetails = Chat & {
+  otherUser: Profile;
+  lastMessage: Message | null;
 };

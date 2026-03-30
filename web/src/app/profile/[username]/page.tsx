@@ -11,6 +11,7 @@ import {
 import { getUserProfile } from "@/lib/profile-queries";
 import { createClient } from "@/utils/supabase/server";
 import FollowButton from "@/app/_components/follow-button";
+import MessageButton from "@/app/_components/message-button";
 import PostsTab from "./_components/posts-tab";
 import LikesTab from "./_components/likes-tab";
 import JobsTab from "./_components/jobs-tab";
@@ -109,11 +110,14 @@ export default async function ProfilePage({
               Profili Düzenle
             </Link>
           ) : (
-            <FollowButton
-              targetUserId={profile.id}
-              isFollowing={profile.isFollowing}
-              followersCount={profile.followers_count}
-            />
+            <div className="flex items-center gap-2">
+              <MessageButton targetUserId={profile.id} />
+              <FollowButton
+                targetUserId={profile.id}
+                isFollowing={profile.isFollowing}
+                followersCount={profile.followers_count}
+              />
+            </div>
           )}
         </div>
       </div>
