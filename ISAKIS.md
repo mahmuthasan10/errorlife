@@ -41,9 +41,9 @@
 > Takip, Mesajlaşma ve Bildirimlerle kullanıcıların birbirine bağlandığı yeni jenerasyon etkileşim dönemi.
 
 ### Hafta 6: Profil, Ayarlar ve Takip Sistemi (Follow)
-- [ ] `follows` tablosunun (follower/following ilişkisi) kurulması ve sayacının yazılması
-- [ ] Twitter (X) benzeri Profil sayfasının (Gönderiler, Beğeniler, İlanlar sekmeleri) altyapısının kurulması
-- [ ] Kullanıcı profilini ve şifresini güncelleyebileceği Ayarlar (Settings) sayfasının oluşturulması
+- [x] `follows` tablosunun (follower/following ilişkisi) kurulması ve sayacının yazılması
+- [x] Twitter (X) benzeri Profil sayfasının (Gönderiler, Beğeniler, İlanlar sekmeleri) altyapısının kurulması
+- [x] Kullanıcı profilini ve şifresini güncelleyebileceği Ayarlar (Settings) sayfasının oluşturulması
 
 ### Hafta 7: Direkt Mesajlaşma (DM) Altyapısı
 - [ ] `chats` (Odalar) ve `messages` (Mesajlar) tablolarının kurulması
