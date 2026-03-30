@@ -415,6 +415,45 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          actor_id: string;
+          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+          entity_id: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          actor_id: string;
+          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+          entity_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          is_read?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       messages: {
         Row: {
           id: string;
@@ -521,4 +560,21 @@ export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type ChatWithDetails = Chat & {
   otherUser: Profile;
   lastMessage: Message | null;
+};
+
+// Notification tipleri
+export type NotificationType = "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  type: NotificationType;
+  entity_id: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type NotificationWithActor = Notification & {
+  actor: Profile;
 };

@@ -1,4 +1,4 @@
-import { Home, Briefcase, User, LogOut, TrendingUp } from "lucide-react";
+import { Home, Briefcase, User, LogOut, TrendingUp, Bell, Mail } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import type { PostWithAuthor } from "@/types/database";
 import { logout } from "./actions";
@@ -98,6 +98,8 @@ export default async function HomePage() {
 
           <NavLink href="/" icon={<Home size={22} />} label="Ana Sayfa" active />
           <NavLink href="/jobs" icon={<Briefcase size={22} />} label="İlanlar" />
+          <NavLink href="/notifications" icon={<Bell size={22} />} label="Bildirimler" />
+          <NavLink href="/messages" icon={<Mail size={22} />} label="Mesajlar" />
           <NavLink href={currentUsername ? `/profile/${currentUsername}` : "/login"} icon={<User size={22} />} label="Profil" />
 
           <form action={logout}>

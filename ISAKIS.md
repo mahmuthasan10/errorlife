@@ -46,14 +46,14 @@
 - [x] Kullanıcı profilini ve şifresini güncelleyebileceği Ayarlar (Settings) sayfasının oluşturulması
 
 ### Hafta 7: Direkt Mesajlaşma (DM) Altyapısı
-- [ ] `chats` (Odalar) ve `messages` (Mesajlar) tablolarının kurulması
-- [ ] İki kullanıcı arasında güvenli mesajlaşmayı sağlayan RLS politikalarının yazılması
-- [ ] Supabase Realtime ile sayfa yenilemeden anlık mesajlaşma (Chat) UX'inin oluşturulması
+- [x] `chats` (Odalar) ve `messages` (Mesajlar) tablolarının kurulması
+- [x] İki kullanıcı arasında güvenli mesajlaşmayı sağlayan RLS politikalarının yazılması
+- [x] Supabase Realtime ile sayfa yenilemeden anlık mesajlaşma (Chat) UX'inin oluşturulması
 
 ### Hafta 8: Gerçek Zamanlı Bildirim Merkezi (Notifications)
-- [ ] `notifications` tablosunun tasarlanması (Takip, Mesaj, Teklif bildirimleri)
-- [ ] Bir etkileşim (Bid, Follow, Like) olduğunda otomatik bildirim üreten Trigger'ların yazılması
-- [ ] İlan sahibinin ekranına Supabase Realtime ile anında bildirimin (Toast) düşmesi
+- [x] `notifications` tablosunun tasarlanması (Takip, Mesaj, Teklif bildirimleri)
+- [x] Bir etkileşim (Bid, Follow, Like) olduğunda otomatik bildirim üreten Trigger'ların yazılması
+- [x] İlan sahibinin ekranına Supabase Realtime ile anında bildirimin (Toast) düşmesi
 
 ---
 
