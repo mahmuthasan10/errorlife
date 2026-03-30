@@ -8,6 +8,8 @@ export type Database = {
           display_name: string;
           avatar_url: string | null;
           bio: string | null;
+          followers_count: number;
+          following_count: number;
           created_at: string;
           updated_at: string;
         };
@@ -17,6 +19,8 @@ export type Database = {
           display_name: string;
           avatar_url?: string | null;
           bio?: string | null;
+          followers_count?: number;
+          following_count?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -26,6 +30,8 @@ export type Database = {
           display_name?: string;
           avatar_url?: string | null;
           bio?: string | null;
+          followers_count?: number;
+          following_count?: number;
           updated_at?: string;
         };
         Relationships: [];
@@ -341,6 +347,40 @@ export type Database = {
           },
         ];
       };
+      follows: {
+        Row: {
+          id: string;
+          follower_id: string;
+          following_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          follower_id: string;
+          following_id: string;
+          created_at?: string;
+        };
+        Update: {
+          follower_id?: string;
+          following_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey";
+            columns: ["follower_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey";
+            columns: ["following_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -368,6 +408,7 @@ export type Bid = Database["public"]["Tables"]["bids"]["Row"];
 export type Like = Database["public"]["Tables"]["likes"]["Row"];
 export type Bookmark = Database["public"]["Tables"]["bookmarks"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
+export type Follow = Database["public"]["Tables"]["follows"]["Row"];
 
 // Post + Profile birleşik tip (feed'de kullanılacak)
 export type PostWithAuthor = Post & {
@@ -394,4 +435,9 @@ export type BidWithJob = Bid & {
 // Comment + Profile birleşik tip
 export type CommentWithAuthor = Comment & {
   profiles: Profile;
+};
+
+// Profil sayfası için birleşik tip
+export type UserProfile = Profile & {
+  isFollowing: boolean;
 };

@@ -67,6 +67,18 @@ export default async function HomePage() {
 
   const currentUserId = currentUser?.id ?? null;
 
+  // Profil linki için username'i çek
+  let currentUsername: string | null = null;
+  if (currentUserId) {
+    const supabase = await createClient();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", currentUserId)
+      .maybeSingle();
+    currentUsername = profile?.username ?? null;
+  }
+
   const { likedPostIds, bookmarkedPostIds } = currentUserId
     ? await getUserInteractions(currentUserId)
     : { likedPostIds: new Set<string>(), bookmarkedPostIds: new Set<string>() };
@@ -86,7 +98,7 @@ export default async function HomePage() {
 
           <NavLink href="/" icon={<Home size={22} />} label="Ana Sayfa" active />
           <NavLink href="/jobs" icon={<Briefcase size={22} />} label="İlanlar" />
-          <NavLink href="/profile" icon={<User size={22} />} label="Profil" />
+          <NavLink href={currentUsername ? `/profile/${currentUsername}` : "/login"} icon={<User size={22} />} label="Profil" />
 
           <form action={logout}>
             <button

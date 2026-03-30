@@ -231,21 +231,36 @@ function PostCard({
 
       <div className="relative z-10 flex gap-3">
         {/* Avatar */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
-          <span className="text-sm font-bold text-zinc-300">
-            {post.profiles.display_name.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        <ClickGuard>
+          <Link
+            href={`/profile/${post.profiles.username}`}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+          >
+            <span className="text-sm font-bold text-zinc-300">
+              {post.profiles.display_name.charAt(0).toUpperCase()}
+            </span>
+          </Link>
+        </ClickGuard>
 
         <div className="min-w-0 flex-1">
           {/* Kullanıcı bilgisi + Sil butonu */}
           <div className="flex items-center gap-2">
-            <span className="truncate font-bold text-white">
-              {post.profiles.display_name}
-            </span>
-            <span className="truncate text-zinc-500">
-              @{post.profiles.username}
-            </span>
+            <ClickGuard>
+              <Link
+                href={`/profile/${post.profiles.username}`}
+                className="truncate font-bold text-white hover:underline"
+              >
+                {post.profiles.display_name}
+              </Link>
+            </ClickGuard>
+            <ClickGuard>
+              <Link
+                href={`/profile/${post.profiles.username}`}
+                className="truncate text-zinc-500 hover:underline"
+              >
+                @{post.profiles.username}
+              </Link>
+            </ClickGuard>
             <span className="text-zinc-600">·</span>
             <span className="shrink-0 text-zinc-500">
               {formatRelativeTime(post.created_at)}

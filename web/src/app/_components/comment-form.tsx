@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition, useRef, useState } from "react";
+import Link from "next/link";
 import { Send } from "lucide-react";
 import { addComment } from "@/app/actions/interactions";
 import type { CommentWithAuthor } from "@/types/database";
@@ -64,6 +65,8 @@ export default function CommentSection({
         display_name: currentUserDisplayName ?? "Sen",
         avatar_url: null,
         bio: null,
+        followers_count: 0,
+        following_count: 0,
         created_at: "",
         updated_at: "",
       },
@@ -131,19 +134,28 @@ export default function CommentSection({
                 comment.id.startsWith("temp-") ? "opacity-60" : ""
               }`}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800">
+              <Link
+                href={`/profile/${comment.profiles.username}`}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+              >
                 <span className="text-xs font-bold text-zinc-300">
                   {comment.profiles.display_name.charAt(0).toUpperCase()}
                 </span>
-              </div>
+              </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-bold text-white">
+                  <Link
+                    href={`/profile/${comment.profiles.username}`}
+                    className="truncate text-sm font-bold text-white hover:underline"
+                  >
                     {comment.profiles.display_name}
-                  </span>
-                  <span className="truncate text-sm text-zinc-500">
+                  </Link>
+                  <Link
+                    href={`/profile/${comment.profiles.username}`}
+                    className="truncate text-sm text-zinc-500 hover:underline"
+                  >
                     @{comment.profiles.username}
-                  </span>
+                  </Link>
                   <span className="text-zinc-600">·</span>
                   <span className="shrink-0 text-sm text-zinc-500">
                     {formatRelativeTime(comment.created_at)}

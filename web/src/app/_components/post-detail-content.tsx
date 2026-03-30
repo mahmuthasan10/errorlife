@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import type {
   PostWithAuthor,
@@ -39,17 +40,28 @@ export default function PostDetailContent({
       {/* Post içeriği */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
+          <Link
+            href={`/profile/${post.profiles.username}`}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+          >
             <span className="text-sm font-bold text-zinc-300">
               {post.profiles.display_name.charAt(0).toUpperCase()}
             </span>
-          </div>
+          </Link>
           <div>
-            <p className="font-bold text-white">
+            <Link
+              href={`/profile/${post.profiles.username}`}
+              className="font-bold text-white hover:underline"
+            >
               {post.profiles.display_name}
-            </p>
+            </Link>
             <p className="text-sm text-zinc-500">
-              @{post.profiles.username}
+              <Link
+                href={`/profile/${post.profiles.username}`}
+                className="hover:underline"
+              >
+                @{post.profiles.username}
+              </Link>
             </p>
           </div>
         </div>
