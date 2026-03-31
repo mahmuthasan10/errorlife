@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MoreVertical } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getChatMessages } from "@/lib/chat-queries";
 import type { Profile } from "@/types/database";
@@ -22,7 +22,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
     redirect("/login");
   }
 
-  // Sohbet odasini ve karsi tarafin bilgilerini cek
   const { data: chat, error: chatError } = await supabase
     .from("chats")
     .select(
@@ -47,27 +46,27 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const initialMessages = await getChatMessages(chatId);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col border-x border-zinc-800">
+    <div className="mx-auto flex h-[calc(100dvh-3.5rem)] max-w-2xl flex-col border-x border-zinc-800 md:h-dvh">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+      <div className="flex items-center gap-3 border-b border-zinc-800 bg-black/80 px-3 py-2.5 backdrop-blur-md">
         <Link
           href="/messages"
-          className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-zinc-900"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-zinc-900"
         >
           <ArrowLeft size={18} />
         </Link>
 
-        {/* Karsi taraf profili */}
+        {/* Karşı taraf profili */}
         <Link
           href={`/profile/${otherUser.username}`}
-          className="flex items-center gap-3 transition-opacity hover:opacity-80"
+          className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
             {otherUser.avatar_url ? (
               <img
                 src={otherUser.avatar_url}
                 alt={otherUser.display_name}
-                className="h-9 w-9 rounded-full object-cover"
+                className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
               <span className="text-sm font-bold text-zinc-300">
@@ -75,13 +74,20 @@ export default async function ChatPage({ params }: ChatPageProps) {
               </span>
             )}
           </div>
-          <div>
-            <p className="text-sm font-bold leading-tight text-white">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold leading-tight text-white">
               {otherUser.display_name}
             </p>
-            <p className="text-xs text-zinc-500">@{otherUser.username}</p>
+            <p className="truncate text-xs text-zinc-500">
+              {otherUser.bio || "ErrorLife kullanıcısı"}
+            </p>
           </div>
         </Link>
+
+        {/* Seçenekler */}
+        <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-zinc-900">
+          <MoreVertical size={18} className="text-zinc-400" />
+        </button>
       </div>
 
       {/* Chat Room (Client Component) */}

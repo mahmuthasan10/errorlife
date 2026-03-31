@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { createClient } from "@/utils/supabase/server";
 import NotificationProvider from "./_components/notification-provider";
+import Sidebar from "./_components/sidebar";
+import BottomNav from "./_components/bottom-nav";
+import MobileSidebar from "./_components/mobile-sidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,13 +35,45 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  let currentUsername: string | null = null;
+  let displayName: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, display_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    currentUsername = profile?.username ?? null;
+    displayName = profile?.display_name ?? null;
+  }
+
+  const isAuth = !!user;
+
   return (
     <html lang="tr" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-black text-[#e7e9ea] antialiased`}
       >
         {user && <NotificationProvider currentUserId={user.id} />}
-        {children}
+
+        {isAuth ? (
+          <>
+            <MobileSidebar
+              currentUsername={currentUsername}
+              displayName={displayName}
+            />
+            <div className="mx-auto flex min-h-screen max-w-7xl">
+              <Sidebar currentUsername={currentUsername} />
+              <main className="min-w-0 flex-1 pb-14 md:pb-0">
+                {children}
+              </main>
+            </div>
+            <BottomNav />
+          </>
+        ) : (
+          children
+        )}
+
         {modal}
         <Toaster
           theme="dark"

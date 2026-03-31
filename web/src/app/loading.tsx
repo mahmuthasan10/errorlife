@@ -33,28 +33,7 @@ function PostSkeleton() {
 
 export default function Loading() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl">
-      {/* Sol Kolon — Navigasyon İskeleti */}
-      <aside className="sticky top-0 flex h-screen w-64 flex-col justify-between border-r border-zinc-800 px-4 py-6">
-        <div className="animate-pulse space-y-4">
-          {/* Logo */}
-          <div className="mb-6 flex items-center gap-3 px-3">
-            <div className="h-10 w-10 rounded-full bg-zinc-800" />
-            <div className="h-5 w-24 rounded bg-zinc-800" />
-          </div>
-
-          {/* Nav linkleri */}
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-3 py-3">
-              <div className="h-5 w-5 rounded bg-zinc-800/60" />
-              <div className="h-4 w-20 rounded bg-zinc-800/40" />
-            </div>
-          ))}
-        </div>
-
-        <div className="h-11 w-full rounded-full bg-zinc-800/40" />
-      </aside>
-
+    <div className="flex flex-1">
       {/* Orta Kolon — Feed İskeleti */}
       <main className="flex-1 border-r border-zinc-800">
         {/* Header */}

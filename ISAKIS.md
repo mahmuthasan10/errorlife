@@ -66,9 +66,9 @@
 - [x] Profil sayfası, Ana Akış ve Ayarlar'ın Twitter standartlarında görselleştirilmesi
 
 ### Hafta 10: Armut Modeli (Jobs) ve Chat UI Revizyonu
-- [ ] İlan detay sayfasının (Upwork/Armut benzeri) profesyonel bir arayüze kavuşturulması
-- [ ] DM (Mesajlaşma) ekranının WhatsApp/X Chat pencereleri gibi modernleştirilmesi
-- [ ] Mobil web görünümü (Responsive Layout) için Sidebar düzeltmeleri
+- [x] İlan detay sayfasının (Upwork/Armut benzeri) profesyonel bir arayüze kavuşturulması
+- [x] DM (Mesajlaşma) ekranının WhatsApp/X Chat pencereleri gibi modernleştirilmesi
+- [x] Mobil web görünümü (Responsive Layout) için Sidebar düzeltmeleri
 
 ---
 
