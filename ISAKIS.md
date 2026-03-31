@@ -61,9 +61,9 @@
 > Tüm arka plan özellikleri biten projenin, premium bir platform hissiyatına kavuşturulduğu tasarım dönemi.
 
 ### Hafta 9: Tasarım Sistemi, Profil ve Akış (Feed) Revizyonu
-- [ ] Tailwind CSS konfigürasyonunun genişletilmesi, Ortak bileşenlerin (Butonlar, Inputlar) şıklaştırılması
-- [ ] Sayfa yüklenme anları için Skeleton Loader iskeletlerinin eklenmesi
-- [ ] Profil sayfası, Ana Akış ve Ayarlar'ın Twitter standartlarında görselleştirilmesi
+- [x] Tailwind CSS konfigürasyonunun genişletilmesi, Ortak bileşenlerin (Butonlar, Inputlar) şıklaştırılması
+- [x] Sayfa yüklenme anları için Skeleton Loader iskeletlerinin eklenmesi
+- [x] Profil sayfası, Ana Akış ve Ayarlar'ın Twitter standartlarında görselleştirilmesi
 
 ### Hafta 10: Armut Modeli (Jobs) ve Chat UI Revizyonu
 - [ ] İlan detay sayfasının (Upwork/Armut benzeri) profesyonel bir arayüze kavuşturulması

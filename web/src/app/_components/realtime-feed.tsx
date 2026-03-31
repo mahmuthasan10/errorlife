@@ -221,7 +221,7 @@ function PostCard({
   isBookmarked: boolean;
 }) {
   return (
-    <article className="relative border-b border-zinc-800 px-4 py-4 transition-colors hover:bg-zinc-950/50">
+    <article className="relative border-b border-zinc-800 px-4 py-3 transition-colors hover:bg-zinc-900/50">
       {/* Tıklanabilir kart overlay — modal açar */}
       <Link
         href={`/post/${post.id}`}

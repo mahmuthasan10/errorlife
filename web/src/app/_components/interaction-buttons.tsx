@@ -41,12 +41,17 @@ export function LikeButton({
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`flex items-center gap-2 transition-colors ${
-        active ? "text-pink-500" : "text-zinc-500 hover:text-pink-500"
+      className={`group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-all active:scale-95 ${
+        active
+          ? "text-pink-500"
+          : "text-zinc-500 hover:bg-pink-500/10 hover:text-pink-500"
       }`}
     >
-      <Heart size={18} className={active ? "fill-pink-500" : ""} />
-      <span className="text-sm">{count}</span>
+      <Heart
+        size={18}
+        className={`transition-transform group-active:scale-90 ${active ? "fill-pink-500" : ""}`}
+      />
+      <span className="min-w-[1ch] text-sm">{count}</span>
     </button>
   );
 }
@@ -80,12 +85,17 @@ export function BookmarkButton({
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`flex items-center gap-2 transition-colors ${
-        active ? "text-green-400" : "text-zinc-500 hover:text-green-400"
+      className={`group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-all active:scale-95 ${
+        active
+          ? "text-green-400"
+          : "text-zinc-500 hover:bg-green-500/10 hover:text-green-400"
       }`}
     >
-      <Bookmark size={18} className={active ? "fill-green-400" : ""} />
-      <span className="text-sm">{count}</span>
+      <Bookmark
+        size={18}
+        className={`transition-transform group-active:scale-90 ${active ? "fill-green-400" : ""}`}
+      />
+      <span className="min-w-[1ch] text-sm">{count}</span>
     </button>
   );
 }
@@ -101,10 +111,13 @@ export function CommentButton({
     <Link
       href={`/post/${postId}`}
       onClick={(e) => e.stopPropagation()}
-      className="flex items-center gap-2 text-zinc-500 transition-colors hover:text-blue-400"
+      className="group flex items-center gap-1.5 rounded-full px-2 py-1.5 text-zinc-500 transition-all hover:bg-blue-500/10 hover:text-blue-500 active:scale-95"
     >
-      <MessageCircle size={18} />
-      <span className="text-sm">{count}</span>
+      <MessageCircle
+        size={18}
+        className="transition-transform group-active:scale-90"
+      />
+      <span className="min-w-[1ch] text-sm">{count}</span>
     </Link>
   );
 }
