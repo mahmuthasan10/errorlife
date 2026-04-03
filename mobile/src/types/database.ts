@@ -211,6 +211,8 @@ export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 export type PostWithAuthor = Post & {
   profiles: Profile;
   post_tags: { tags: Tag }[];
+  user_likes: { user_id: string }[];
+  user_bookmarks: { user_id: string }[];
 };
 
 // Job + Profile birleşik tip
