@@ -57,6 +57,7 @@ export default async function ModalPostPage({ params }: ModalPostPageProps) {
         isBookmarked={isBookmarked}
         currentUserName={currentUserName}
         currentUserDisplayName={currentUserDisplayName}
+        currentUserId={user?.id}
       />
     </PostModal>
   );

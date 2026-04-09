@@ -48,7 +48,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   return (
     <div className="mx-auto flex h-[calc(100dvh-3.5rem)] max-w-2xl flex-col border-x border-zinc-800 md:h-dvh">
       {/* Sticky Header */}
-      <div className="flex items-center gap-3 border-b border-zinc-800 bg-black/80 px-3 py-2.5 backdrop-blur-md">
+      <div className="flex items-center gap-3 border-b border-zinc-800 bg-black px-3 py-2.5">
         <Link
           href="/messages"
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-zinc-900"

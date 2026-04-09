@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { UserPlus, DollarSign, MessageCircle, Heart } from "lucide-react";
+import { UserPlus, DollarSign, MessageCircle, Heart, MessageSquare } from "lucide-react";
 import { markAsRead } from "@/app/actions/notifications";
 import type { NotificationWithActor, NotificationType } from "@/types/database";
 
@@ -37,6 +37,12 @@ const NOTIFICATION_CONFIG: Record<
     icon: Heart,
     iconColor: "text-red-400",
     getText: (name) => `${name} gönderini beğendi.`,
+    getHref: (n) => `/post/${n.entity_id}`,
+  },
+  COMMENT: {
+    icon: MessageSquare,
+    iconColor: "text-orange-400",
+    getText: (name) => `${name} gönderine yorum yaptı.`,
     getHref: (n) => `/post/${n.entity_id}`,
   },
 };

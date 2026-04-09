@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Message } from "@/types/database";
+import { markMessagesAsRead } from "@/app/actions/chat";
 import ChatInput from "./chat-input";
 
 interface ChatRoomProps {
@@ -18,12 +19,25 @@ function formatMessageTime(dateStr: string): string {
   });
 }
 
+function TypingDots() {
+  return (
+    <div className="flex justify-start">
+      <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-zinc-800 px-4 py-3">
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:0ms]" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:150ms]" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:300ms]" />
+      </div>
+    </div>
+  );
+}
+
 export default function ChatRoom({
   chatId,
   currentUserId,
   initialMessages,
 }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -32,14 +46,19 @@ export default function ChatRoom({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isOtherTyping]);
 
-  // Supabase Realtime aboneliği
+  // Sohbet açıldığında okunmamış mesajları okundu işaretle
+  useEffect(() => {
+    markMessagesAsRead(chatId);
+  }, [chatId]);
+
+  // Realtime: Yeni mesajlar
   useEffect(() => {
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`chat-${chatId}`)
+      .channel(`chat-messages:${chatId}`)
       .on(
         "postgres_changes",
         {
@@ -50,6 +69,13 @@ export default function ChatRoom({
         },
         (payload) => {
           const newMessage = payload.new as Message;
+
+          // Karşı taraf mesaj gönderdi → okundu işaretle ve typing durdu
+          if (newMessage.sender_id !== currentUserId) {
+            setIsOtherTyping(false);
+            markMessagesAsRead(chatId);
+          }
+
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMessage.id)) return prev;
             return [...prev, newMessage];
@@ -61,7 +87,31 @@ export default function ChatRoom({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatId]);
+  }, [chatId, currentUserId]);
+
+  // Realtime: Typing broadcast dinle
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`typing:${chatId}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const data = payload.payload as {
+          userId: string;
+          isTyping: boolean;
+        };
+        if (data.userId !== currentUserId) {
+          setIsOtherTyping(data.isTyping);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [chatId, currentUserId]);
 
   return (
     <>
@@ -104,11 +154,15 @@ export default function ChatRoom({
             );
           })
         )}
+
+        {/* Yazıyor göstergesi */}
+        {isOtherTyping && <TypingDots />}
+
         <div ref={bottomRef} />
       </div>
 
       {/* Mesaj Gönderme Formu */}
-      <ChatInput chatId={chatId} />
+      <ChatInput chatId={chatId} currentUserId={currentUserId} />
     </>
   );
 }

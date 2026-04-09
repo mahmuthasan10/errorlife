@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Settings } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import type { Profile } from "@/types/database";
 import SettingsForm from "./_components/settings-form";
+import AvatarUpload from "./_components/avatar-upload";
+import CoverUpload from "./_components/cover-upload";
+
+export const metadata: Metadata = {
+  title: "Ayarlar | ErrorLife",
+};
 
 async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
@@ -35,7 +42,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-4 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-20 flex items-center gap-4 border-b border-zinc-800 bg-black px-4 py-3">
         <Link
           href={`/profile/${profile.username}`}
           className="rounded-full p-2 transition-colors hover:bg-zinc-900"
@@ -47,22 +54,24 @@ export default async function SettingsPage() {
 
       {/* İçerik */}
       <div className="px-4 py-6">
-        {/* Profil Önizleme */}
+        {/* Kapak Fotoğrafı */}
+        <div className="mb-6">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Kapak Fotoğrafı
+          </p>
+          <CoverUpload currentCoverUrl={profile.cover_url} />
+        </div>
+
+        {/* Profil Önizleme + Avatar */}
         <div className="mb-8 flex items-center gap-4">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="h-16 w-16 rounded-full border-2 border-zinc-800 object-cover"
-            />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-zinc-800 bg-zinc-800 text-2xl font-bold text-white">
-              {profile.display_name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarUpload
+            currentAvatarUrl={profile.avatar_url}
+            displayName={profile.display_name}
+          />
           <div>
             <p className="font-bold text-white">{profile.display_name}</p>
             <p className="text-sm text-zinc-500">@{profile.username}</p>
+            <p className="mt-0.5 text-xs text-zinc-600">Fotoğrafa tıkla &amp; değiştir</p>
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import type {
   UserProfile,
   PostWithAuthor,
   JobWithAuthor,
+  Profile,
 } from "@/types/database";
 
 const usernameSchema = z
@@ -116,6 +117,48 @@ export async function getUserLikedPosts(
   return data
     .map((row) => row.posts)
     .filter((p): p is PostWithAuthor => p !== null);
+}
+
+export async function getFollowers(username: string): Promise<Profile[]> {
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!profile) return [];
+
+  const { data, error } = await supabase
+    .from("follows")
+    .select("follower:profiles!follows_follower_id_fkey(*)")
+    .eq("following_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((row) => row.follower as unknown as Profile);
+}
+
+export async function getFollowing(username: string): Promise<Profile[]> {
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!profile) return [];
+
+  const { data, error } = await supabase
+    .from("follows")
+    .select("following:profiles!follows_following_id_fkey(*)")
+    .eq("follower_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((row) => row.following as unknown as Profile);
 }
 
 export async function getUserJobs(

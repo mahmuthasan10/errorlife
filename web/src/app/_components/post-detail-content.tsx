@@ -25,6 +25,7 @@ interface PostDetailContentProps {
   isBookmarked: boolean;
   currentUserName?: string;
   currentUserDisplayName?: string;
+  currentUserId?: string;
 }
 
 export default function PostDetailContent({
@@ -34,6 +35,7 @@ export default function PostDetailContent({
   isBookmarked,
   currentUserName,
   currentUserDisplayName,
+  currentUserId,
 }: PostDetailContentProps) {
   return (
     <div>
@@ -42,11 +44,22 @@ export default function PostDetailContent({
         <div className="flex items-center gap-3">
           <Link
             href={`/profile/${post.profiles.username}`}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+            className="shrink-0 transition-opacity hover:opacity-80"
           >
-            <span className="text-sm font-bold text-zinc-300">
-              {post.profiles.display_name.charAt(0).toUpperCase()}
-            </span>
+            {post.profiles.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.profiles.avatar_url}
+                alt={post.profiles.display_name}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
+                <span className="text-sm font-bold text-zinc-300">
+                  {post.profiles.display_name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
           </Link>
           <div>
             <Link
@@ -69,6 +82,18 @@ export default function PostDetailContent({
         <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
           {post.content}
         </p>
+
+        {/* Görsel */}
+        {post.image_url && (
+          <div className="mt-3 overflow-hidden rounded-xl border border-zinc-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.image_url}
+              alt="Gönderi görseli"
+              className="max-h-96 w-full object-cover"
+            />
+          </div>
+        )}
 
         {/* Etiketler */}
         {post.post_tags.length > 0 && (
@@ -125,6 +150,7 @@ export default function PostDetailContent({
         initialComments={comments}
         currentUserName={currentUserName}
         currentUserDisplayName={currentUserDisplayName}
+        currentUserId={currentUserId}
       />
     </div>
   );

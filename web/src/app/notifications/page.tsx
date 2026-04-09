@@ -12,7 +12,7 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-2xl border-x border-zinc-800 min-h-screen">
       {/* Başlık */}
-      <div className="sticky top-0 z-10 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-20 border-b border-zinc-800 bg-black px-4 py-3">
         <h1 className="text-xl font-bold text-[#e7e9ea]">Bildirimler</h1>
       </div>
 

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,6 +17,23 @@ import PostsTab from "./_components/posts-tab";
 import LikesTab from "./_components/likes-tab";
 import JobsTab from "./_components/jobs-tab";
 import TabSkeleton from "./_components/tab-skeleton";
+
+// ── Metadata ──────────────────────────────────────────────
+
+interface ProfilePageProps {
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const profile = await getUserProfile(username);
+  if (!profile) return { title: `@${username} | ErrorLife` };
+  return {
+    title: `${profile.display_name} (@${username}) | ErrorLife`,
+    description: profile.bio ?? `${profile.display_name} ErrorLife profilini incele.`,
+  };
+}
 
 // ── Tab Sabitleri ─────────────────────────────────────────
 
@@ -39,11 +57,6 @@ function formatJoinDate(dateStr: string): string {
 
 // ── Sayfa ─────────────────────────────────────────────────
 
-interface ProfilePageProps {
-  params: Promise<{ username: string }>;
-  searchParams: Promise<{ tab?: string }>;
-}
-
 export default async function ProfilePage({
   params,
   searchParams,
@@ -66,7 +79,7 @@ export default async function ProfilePage({
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-20 flex items-center gap-6 border-b border-zinc-800 bg-black/80 px-4 py-2 backdrop-blur-md">
+      <div className="sticky top-0 z-20 flex items-center gap-6 border-b border-zinc-800 bg-black px-4 py-2">
         <Link
           href="/"
           className="rounded-full p-2 transition-colors hover:bg-zinc-900"
@@ -83,7 +96,15 @@ export default async function ProfilePage({
 
       {/* ── Banner ── */}
       <div className="relative">
-        <div className="h-48 bg-zinc-900" />
+        {profile.cover_url ? (
+          <img
+            src={profile.cover_url}
+            alt="Kapak fotoğrafı"
+            className="h-48 w-full object-cover"
+          />
+        ) : (
+          <div className="h-48 bg-zinc-900" />
+        )}
 
         {/* Avatar — banner üzerine taşıyor */}
         <div className="absolute -bottom-16 left-4">
@@ -123,7 +144,7 @@ export default async function ProfilePage({
       </div>
 
       {/* ── Profil Bilgileri ── */}
-      <div className="mt-10 px-4">
+      <div className="mt-20 px-4">
         <h1 className="text-xl font-bold">{profile.display_name}</h1>
         <p className="text-zinc-500">@{profile.username}</p>
 

@@ -146,3 +146,37 @@ export async function addComment(
   revalidatePath(`/post/${postId}`);
   return { error: null };
 }
+
+export async function deleteComment(
+  commentId: string,
+  postId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Bu işlem için giriş yapmalısınız." };
+    }
+
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return { error: `Yorum silinemedi: ${error.message}` };
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
+  return { error: null };
+}

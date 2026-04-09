@@ -5,9 +5,15 @@ import {
   ArrowLeft,
   Send,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import type { JobWithAuthor, BidWithJob } from "@/types/database";
+
+export const metadata: Metadata = {
+  title: "İlanlar | ErrorLife",
+  description: "Freelance iş ilanlarını keşfedin ve teklif verin.",
+};
 import CreateJobForm from "@/app/_components/create-job-form";
 
 // ── Veri Çekme ────────────────────────────────────────────
@@ -147,7 +153,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-zinc-800 bg-black/80 backdrop-blur-md">
+      <div className="sticky top-0 z-20 border-b border-zinc-800 bg-black">
         <div className="flex items-center gap-4 px-4 py-3">
           <Link
             href="/"

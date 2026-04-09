@@ -44,7 +44,7 @@ export default function Loading() {
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-zinc-800 bg-black/80 backdrop-blur-md">
+      <div className="sticky top-0 z-20 border-b border-zinc-800 bg-black">
         <div className="flex items-center gap-4 px-4 py-3">
           <div className="h-8 w-8 animate-pulse rounded-full bg-zinc-800/50" />
           <div className="h-6 w-20 animate-pulse rounded bg-zinc-800" />

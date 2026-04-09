@@ -1,9 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getUserChats } from "@/lib/chat-queries";
 import type { ChatWithDetails } from "@/types/database";
+
+export const metadata: Metadata = {
+  title: "Mesajlar | ErrorLife",
+};
 
 function formatChatTime(dateStr: string): string {
   const now = new Date();
@@ -38,11 +43,12 @@ export default async function MessagesPage() {
   }
 
   const chats = await getUserChats();
+  const currentUserId = user.id;
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl border-x border-zinc-800">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-20 border-b border-zinc-800 bg-black px-4 py-3">
         <h2 className="text-xl font-bold">Mesajlar</h2>
       </div>
 
@@ -52,7 +58,7 @@ export default async function MessagesPage() {
       ) : (
         <div>
           {chats.map((chat) => (
-            <ChatRow key={chat.id} chat={chat} />
+            <ChatRow key={chat.id} chat={chat} currentUserId={currentUserId} />
           ))}
         </div>
       )}
@@ -60,12 +66,18 @@ export default async function MessagesPage() {
   );
 }
 
-function ChatRow({ chat }: { chat: ChatWithDetails }) {
+function ChatRow({ chat, currentUserId }: { chat: ChatWithDetails; currentUserId: string }) {
   const { otherUser, lastMessage } = chat;
   const initial = otherUser.display_name.charAt(0).toUpperCase();
   const timeStr = lastMessage
     ? formatChatTime(lastMessage.created_at)
     : formatChatTime(chat.created_at);
+
+  // Okunmamış mesaj var mı? (Son mesaj benden değilse ve okunmadıysa)
+  const hasUnread =
+    lastMessage !== null &&
+    lastMessage.sender_id !== currentUserId &&
+    !lastMessage.is_read;
 
   return (
     <Link
@@ -88,15 +100,24 @@ function ChatRow({ chat }: { chat: ChatWithDetails }) {
       {/* Bilgiler */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-bold text-white">
+          <span className={`truncate font-bold ${hasUnread ? "text-white" : "text-zinc-300"}`}>
             {otherUser.display_name}
           </span>
-          <span className="shrink-0 text-xs text-zinc-500">{timeStr}</span>
+          <span className={`shrink-0 text-xs ${hasUnread ? "text-blue-400 font-semibold" : "text-zinc-500"}`}>
+            {timeStr}
+          </span>
         </div>
-        <p className="truncate text-sm text-zinc-500">
+        <p className={`truncate text-sm ${hasUnread ? "font-semibold text-white" : "text-zinc-500"}`}>
           {lastMessage ? lastMessage.content : "Henüz mesaj yok"}
         </p>
       </div>
+
+      {/* Okunmamış göstergesi */}
+      {hasUnread && (
+        <div className="flex-shrink-0">
+          <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+        </div>
+      )}
     </Link>
   );
 }

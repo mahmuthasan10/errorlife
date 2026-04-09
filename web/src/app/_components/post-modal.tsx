@@ -36,7 +36,7 @@ export default function PostModal({
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-zinc-900/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-zinc-900/80-sm"
         onClick={handleClose}
         aria-hidden="true"
       />

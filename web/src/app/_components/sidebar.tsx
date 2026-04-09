@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { Home, Briefcase, Bell, Mail, User, LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Home, Search, Briefcase, Bell, Mail, User, LogOut } from "lucide-react";
 import { logout } from "@/app/actions";
 
 interface SidebarProps {
@@ -8,12 +11,19 @@ interface SidebarProps {
 
 const navItems = [
   { href: "/", icon: Home, label: "Ana Sayfa" },
+  { href: "/search", icon: Search, label: "Keşfet" },
   { href: "/jobs", icon: Briefcase, label: "İlanlar" },
   { href: "/notifications", icon: Bell, label: "Bildirimler" },
   { href: "/messages", icon: Mail, label: "Mesajlar" },
 ];
 
 export default function Sidebar({ currentUsername }: SidebarProps) {
+  const pathname = usePathname();
+
+  function isActive(href: string) {
+    return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  }
+
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-zinc-800 px-4 py-6 md:flex">
       <div className="space-y-2">
@@ -29,7 +39,11 @@ export default function Sidebar({ currentUsername }: SidebarProps) {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-4 rounded-full px-3 py-3 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
+            className={`flex items-center gap-4 rounded-full px-3 py-3 transition-colors hover:bg-zinc-900 ${
+              isActive(item.href)
+                ? "font-bold text-white"
+                : "text-zinc-400 hover:text-white"
+            }`}
           >
             <item.icon size={22} />
             <span className="text-lg">{item.label}</span>
@@ -38,7 +52,11 @@ export default function Sidebar({ currentUsername }: SidebarProps) {
 
         <Link
           href={currentUsername ? `/profile/${currentUsername}` : "/login"}
-          className="flex items-center gap-4 rounded-full px-3 py-3 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
+          className={`flex items-center gap-4 rounded-full px-3 py-3 transition-colors hover:bg-zinc-900 ${
+            pathname.startsWith("/profile")
+              ? "font-bold text-white"
+              : "text-zinc-400 hover:text-white"
+          }`}
         >
           <User size={22} />
           <span className="text-lg">Profil</span>
@@ -55,9 +73,12 @@ export default function Sidebar({ currentUsername }: SidebarProps) {
         </form>
       </div>
 
-      <button className="w-full rounded-full bg-white py-3 text-sm font-bold text-black transition-opacity hover:opacity-90">
+      <a
+        href="mailto:mermuh037@gmail.com?subject=Sorun%20Bildirimi"
+        className="block w-full rounded-full bg-white py-3 text-center text-sm font-bold text-black transition-opacity hover:opacity-90"
+      >
         Sorun Paylaş
-      </button>
+      </a>
     </aside>
   );
 }

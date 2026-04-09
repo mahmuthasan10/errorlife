@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-20 flex items-center gap-6 border-b border-zinc-800 bg-black/80 px-4 py-2 backdrop-blur-md">
+      <div className="sticky top-0 z-20 flex items-center gap-6 border-b border-zinc-800 bg-black px-4 py-2">
         <div className="h-9 w-9 animate-pulse rounded-full bg-zinc-800/50" />
         <div className="space-y-1.5">
           <div className="h-4 w-32 animate-pulse rounded bg-zinc-800" />

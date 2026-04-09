@@ -22,6 +22,34 @@ export async function startChat(
   return getOrCreateChat(targetUserId);
 }
 
+export async function markMessagesAsRead(
+  chatId: string
+): Promise<ChatActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
+
+  try {
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("chat_id", chatId)
+      .eq("is_read", false)
+      .neq("sender_id", user.id);
+
+    return { error: null };
+  } catch {
+    return { error: "Mesajlar okundu olarak işaretlenemedi." };
+  }
+}
+
 export async function sendMessage(
   chatId: string,
   content: string

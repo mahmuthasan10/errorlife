@@ -2,8 +2,8 @@
 
 import { useOptimistic, useTransition, useRef, useState } from "react";
 import Link from "next/link";
-import { Send } from "lucide-react";
-import { addComment } from "@/app/actions/interactions";
+import { Send, Trash2 } from "lucide-react";
+import { addComment, deleteComment } from "@/app/actions/interactions";
 import type { CommentWithAuthor } from "@/types/database";
 
 function formatRelativeTime(dateStr: string): string {
@@ -25,6 +25,7 @@ interface CommentSectionProps {
   initialComments: CommentWithAuthor[];
   currentUserName?: string;
   currentUserDisplayName?: string;
+  currentUserId?: string;
 }
 
 export default function CommentSection({
@@ -32,17 +33,21 @@ export default function CommentSection({
   initialComments,
   currentUserName,
   currentUserDisplayName,
+  currentUserId,
 }: CommentSectionProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const [optimisticComments, addOptimisticComment] = useOptimistic(
+  const [optimisticComments, updateOptimisticComments] = useOptimistic(
     initialComments,
-    (current: CommentWithAuthor[], newComment: CommentWithAuthor) => [
-      newComment,
-      ...current,
-    ]
+    (
+      current: CommentWithAuthor[],
+      action: { type: "add"; comment: CommentWithAuthor } | { type: "delete"; id: string }
+    ) => {
+      if (action.type === "add") return [action.comment, ...current];
+      return current.filter((c) => c.id !== action.id);
+    }
   );
 
   function handleSubmit(formData: FormData) {
@@ -54,7 +59,7 @@ export default function CommentSection({
 
     const optimisticComment: CommentWithAuthor = {
       id: `temp-${Date.now()}`,
-      user_id: "",
+      user_id: currentUserId ?? "",
       post_id: postId,
       content,
       created_at: new Date().toISOString(),
@@ -64,6 +69,7 @@ export default function CommentSection({
         username: currentUserName ?? "sen",
         display_name: currentUserDisplayName ?? "Sen",
         avatar_url: null,
+        cover_url: null,
         bio: null,
         followers_count: 0,
         following_count: 0,
@@ -73,7 +79,7 @@ export default function CommentSection({
     };
 
     startTransition(async () => {
-      addOptimisticComment(optimisticComment);
+      updateOptimisticComments({ type: "add", comment: optimisticComment });
       formRef.current?.reset();
 
       const result = await addComment(postId, content);
@@ -81,6 +87,13 @@ export default function CommentSection({
       if (result.error) {
         setError(result.error);
       }
+    });
+  }
+
+  function handleDelete(commentId: string) {
+    startTransition(async () => {
+      updateOptimisticComments({ type: "delete", id: commentId });
+      await deleteComment(commentId, postId);
     });
   }
 
@@ -136,11 +149,22 @@ export default function CommentSection({
             >
               <Link
                 href={`/profile/${comment.profiles.username}`}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+                className="shrink-0 transition-opacity hover:opacity-80"
               >
-                <span className="text-xs font-bold text-zinc-300">
-                  {comment.profiles.display_name.charAt(0).toUpperCase()}
-                </span>
+                {comment.profiles.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={comment.profiles.avatar_url}
+                    alt={comment.profiles.display_name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800">
+                    <span className="text-xs font-bold text-zinc-300">
+                      {comment.profiles.display_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -160,6 +184,17 @@ export default function CommentSection({
                   <span className="shrink-0 text-sm text-zinc-500">
                     {formatRelativeTime(comment.created_at)}
                   </span>
+                  {currentUserId && comment.user_id === currentUserId && !comment.id.startsWith("temp-") && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(comment.id)}
+                      disabled={isPending}
+                      className="ml-auto flex items-center text-zinc-600 transition-colors hover:text-red-400 disabled:opacity-40"
+                      title="Yorumu sil"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
                   {comment.content}

@@ -24,11 +24,20 @@ function PostRow({ post }: { post: PostWithAuthor }) {
       className="flex gap-3 px-4 py-4 transition-colors hover:bg-zinc-950/50"
     >
       {/* Avatar */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
-        <span className="text-sm font-bold text-zinc-300">
-          {post.profiles.display_name.charAt(0).toUpperCase()}
-        </span>
-      </div>
+      {post.profiles.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.profiles.avatar_url}
+          alt={post.profiles.display_name}
+          className="h-10 w-10 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
+          <span className="text-sm font-bold text-zinc-300">
+            {post.profiles.display_name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
 
       <div className="min-w-0 flex-1">
         {/* Meta */}
@@ -49,6 +58,16 @@ function PostRow({ post }: { post: PostWithAuthor }) {
         <p className="mt-1 line-clamp-4 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
           {post.content}
         </p>
+
+        {/* Görsel */}
+        {post.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.image_url}
+            alt="Gönderi görseli"
+            className="mt-2 max-h-72 w-full rounded-xl object-cover"
+          />
+        )}
 
         {/* Etiketler */}
         {post.post_tags.length > 0 && (

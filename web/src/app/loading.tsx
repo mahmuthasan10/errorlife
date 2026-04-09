@@ -37,7 +37,7 @@ export default function Loading() {
       {/* Orta Kolon — Feed İskeleti */}
       <main className="flex-1 border-r border-zinc-800">
         {/* Header */}
-        <div className="sticky top-0 z-10 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+        <div className="sticky top-0 z-20 border-b border-zinc-800 bg-black px-4 py-3">
           <div className="h-6 w-28 animate-pulse rounded bg-zinc-800" />
         </div>
 

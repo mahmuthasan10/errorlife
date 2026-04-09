@@ -46,6 +46,10 @@ function RootLayoutNav() {
             sheetCornerRadius: 20,
           }}
         />
+        <Stack.Screen
+          name="messages/[chatId]"
+          options={{ headerShown: false }}
+        />
       </Stack>
 
       {isLoading && (

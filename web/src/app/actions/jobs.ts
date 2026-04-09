@@ -160,7 +160,6 @@ export async function createBid(
           .eq("id", existingBid.id);
 
         if (updateError) {
-          console.error("Re-bid Update Error:", updateError);
           return { error: `Teklif güncellenemedi: ${updateError.message}` };
         }
 
@@ -237,8 +236,71 @@ export async function acceptBid(
       .eq("job_id", jobId);
 
     if (updateError) {
-      console.error("Accept Bid Error:", updateError);
       return { error: updateError.message };
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/jobs");
+  return { error: null };
+}
+
+export async function deleteJob(jobId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Bu işlem için giriş yapmalısınız." };
+    }
+
+    const { error } = await supabase
+      .from("jobs")
+      .delete()
+      .eq("id", jobId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return { error: `İlan silinemedi: ${error.message}` };
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath("/jobs");
+  return { error: null };
+}
+
+export async function updateJobStatus(
+  jobId: string,
+  status: "open" | "in_progress" | "closed"
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Bu işlem için giriş yapmalısınız." };
+    }
+
+    const { error } = await supabase
+      .from("jobs")
+      .update({ status })
+      .eq("id", jobId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return { error: `İlan durumu güncellenemedi: ${error.message}` };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -287,7 +349,6 @@ export async function rejectBid(
       .eq("job_id", jobId);
 
     if (updateError) {
-      console.error("Reject Bid Error:", updateError);
       return { error: updateError.message };
     }
   } catch {

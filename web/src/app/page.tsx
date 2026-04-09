@@ -1,16 +1,10 @@
+import Link from "next/link";
 import { TrendingUp } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import type { PostWithAuthor } from "@/types/database";
+import { getTrendingTags } from "@/lib/tag-queries";
 import CreatePostForm from "./_components/create-post-form";
 import RealtimeFeed from "./_components/realtime-feed";
-
-const trendingTags = [
-  { name: "React", slug: "react", postCount: 142 },
-  { name: "Next.js", slug: "nextjs", postCount: 98 },
-  { name: "TypeScript", slug: "typescript", postCount: 87 },
-  { name: "Supabase", slug: "supabase", postCount: 65 },
-  { name: "TailwindCSS", slug: "tailwindcss", postCount: 53 },
-];
 
 async function getPosts(): Promise<PostWithAuthor[]> {
   const supabase = await createClient();
@@ -59,9 +53,10 @@ async function getUserInteractions(userId: string) {
 }
 
 export default async function HomePage() {
-  const [posts, currentUser] = await Promise.all([
+  const [posts, currentUser, trendingTags] = await Promise.all([
     getPosts(),
     getCurrentUser(),
+    getTrendingTags(5),
   ]);
 
   const currentUserId = currentUser?.id ?? null;
@@ -75,12 +70,14 @@ export default async function HomePage() {
       {/* Orta Kolon — Akış (Feed) */}
       <main className="flex-1 border-r border-zinc-800">
         {/* Üst başlık — masaüstünde göster, mobilde MobileSidebar header var */}
-        <div className="sticky top-0 z-10 hidden border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md md:block">
+        <div className="sticky top-0 z-20 hidden border-b border-zinc-800 bg-black px-4 py-3 md:block">
           <h2 className="text-xl font-bold">Ana Sayfa</h2>
         </div>
 
         {/* Sorun paylaş formu */}
-        <CreatePostForm />
+        <div id="compose">
+          <CreatePostForm />
+        </div>
 
         {/* Gönderi listesi — Realtime */}
         <RealtimeFeed
@@ -97,7 +94,11 @@ export default async function HomePage() {
           <h3 className="mb-4 text-xl font-bold">Trend Etiketler</h3>
           <div className="space-y-4">
             {trendingTags.map((tag) => (
-              <div key={tag.slug} className="group cursor-pointer">
+              <Link
+                key={tag.slug}
+                href={`/search?tag=${tag.slug}`}
+                className="group block"
+              >
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-zinc-500" />
                   <span className="font-semibold text-white group-hover:underline">
@@ -105,9 +106,9 @@ export default async function HomePage() {
                   </span>
                 </div>
                 <p className="ml-6 text-sm text-zinc-500">
-                  {tag.postCount} gönderi
+                  {tag.post_count} gönderi
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

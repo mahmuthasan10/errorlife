@@ -7,6 +7,7 @@ export type Database = {
           username: string;
           display_name: string;
           avatar_url: string | null;
+          cover_url: string | null;
           bio: string | null;
           followers_count: number;
           following_count: number;
@@ -18,6 +19,7 @@ export type Database = {
           username: string;
           display_name: string;
           avatar_url?: string | null;
+          cover_url?: string | null;
           bio?: string | null;
           followers_count?: number;
           following_count?: number;
@@ -29,6 +31,7 @@ export type Database = {
           username?: string;
           display_name?: string;
           avatar_url?: string | null;
+          cover_url?: string | null;
           bio?: string | null;
           followers_count?: number;
           following_count?: number;
@@ -420,7 +423,7 @@ export type Database = {
           id: string;
           user_id: string;
           actor_id: string;
-          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE" | "COMMENT";
           entity_id: string | null;
           is_read: boolean;
           created_at: string;
@@ -429,7 +432,7 @@ export type Database = {
           id?: string;
           user_id: string;
           actor_id: string;
-          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+          type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE" | "COMMENT";
           entity_id?: string | null;
           is_read?: boolean;
           created_at?: string;
@@ -504,6 +507,33 @@ export type Database = {
         };
         Returns: string;
       };
+      get_trending_tags: {
+        Args: { p_limit?: number };
+        Returns: { id: string; name: string; slug: string; post_count: number }[];
+      };
+      search_posts: {
+        Args: { p_query?: string; p_tag?: string; p_limit?: number; p_offset?: number };
+        Returns: {
+          id: string; user_id: string; content: string; image_url: string | null;
+          like_count: number; comment_count: number; bookmark_count: number;
+          created_at: string; updated_at: string;
+        }[];
+      };
+      search_users: {
+        Args: { p_query?: string; p_limit?: number; p_offset?: number };
+        Returns: {
+          id: string; username: string; display_name: string; avatar_url: string | null;
+          bio: string | null; followers_count: number; following_count: number;
+          created_at: string; updated_at: string;
+        }[];
+      };
+      search_jobs: {
+        Args: { p_query?: string; p_tag?: string; p_limit?: number; p_offset?: number };
+        Returns: {
+          id: string; user_id: string; title: string; description: string;
+          budget: number | null; status: string; created_at: string; updated_at: string;
+        }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -563,7 +593,7 @@ export type ChatWithDetails = Chat & {
 };
 
 // Notification tipleri
-export type NotificationType = "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+export type NotificationType = "FOLLOW" | "BID" | "MESSAGE" | "LIKE" | "COMMENT";
 
 export type Notification = {
   id: string;

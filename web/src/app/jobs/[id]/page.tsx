@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import { createClient } from "@/utils/supabase/server";
 import type { JobWithAuthor, BidWithExpert } from "@/types/database";
 import CreateBidForm from "@/app/_components/create-bid-form";
 import BidActionButtons from "@/app/_components/accept-bid-button";
+import JobOwnerActions from "./_components/job-owner-actions";
 
 // ── Veri Çekme ─────────────────────────────────────────────
 
@@ -90,6 +92,15 @@ interface JobDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+export async function generateMetadata({ params }: JobDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await (await import("@/utils/supabase/server")).createClient();
+  const { data } = await supabase.from("jobs").select("title").eq("id", id).maybeSingle();
+  return {
+    title: data ? `${data.title} | ErrorLife` : "İlan Detayı | ErrorLife",
+  };
+}
+
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { id } = await params;
 
@@ -112,7 +123,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-4 border-b border-zinc-800 bg-black/80 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-20 flex items-center gap-4 border-b border-zinc-800 bg-black px-4 py-3">
         <Link
           href="/jobs"
           className="rounded-full p-2 transition-colors hover:bg-zinc-900"
@@ -378,6 +389,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                   Bu ilana zaten teklif verdiniz.
                 </p>
               </div>
+            )}
+
+            {isOwner && (
+              <JobOwnerActions
+                jobId={job.id}
+                currentStatus={job.status as "open" | "in_progress" | "closed"}
+              />
             )}
           </div>
         </div>

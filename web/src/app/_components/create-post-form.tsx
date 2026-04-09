@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { User, Sparkles, Loader2, X } from "lucide-react";
+import { User, Sparkles, Loader2, X, ImagePlus } from "lucide-react";
 import { createPost } from "@/app/actions";
 import { optimizePostContent } from "@/app/actions/ai";
+import { uploadPostImage } from "@/app/actions/upload";
 
 export default function CreatePostForm() {
   const [error, setError] = useState<string | null>(null);
@@ -11,8 +12,11 @@ export default function CreatePostForm() {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [content, setContent] = useState("");
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const isAIDisabled = isLoadingAI || content.trim().length < 10;
 
@@ -25,22 +29,53 @@ export default function CreatePostForm() {
         formData.set("tags", JSON.stringify(suggestedTags));
       }
 
+      if (imageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.set("file", imageFile);
+        const uploadResult = await uploadPostImage(uploadFormData);
+        if (uploadResult.error) {
+          setError(uploadResult.error);
+          setLoading(false);
+          return;
+        }
+        if (uploadResult.url) {
+          formData.set("image_url", uploadResult.url);
+        }
+      }
+
       const result = await createPost(formData);
       if (result.error) {
         setError(result.error);
       } else {
         setContent("");
         setSuggestedTags([]);
+        setImageFile(null);
+        setImagePreview(null);
         formRef.current?.reset();
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
         }
       }
     } catch {
-      setError("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
+      setError("Beklenmeyen bir hata olustu. Lutfen tekrar deneyin.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() {
+    setImageFile(null);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   }
 
   async function handleAIOptimize() {
@@ -65,7 +100,7 @@ export default function CreatePostForm() {
         }
       }
     } catch {
-      setError("AI servisi şu anda yanıt veremiyor.");
+      setError("AI servisi su anda yanit veremiyor.");
     } finally {
       setIsLoadingAI(false);
     }
@@ -88,11 +123,12 @@ export default function CreatePostForm() {
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
           <User size={20} className="text-zinc-400" />
         </div>
+
         <form ref={formRef} action={handleSubmit} className="flex-1">
           <textarea
             ref={textareaRef}
             name="content"
-            placeholder="Bir sorun mu yaşıyorsun? Paylaş..."
+            placeholder="Bir sorun mu yasiyorsun? Paylas..."
             rows={2}
             maxLength={500}
             value={content}
@@ -101,6 +137,24 @@ export default function CreatePostForm() {
             readOnly={isLoadingAI}
             className="w-full resize-none bg-transparent text-lg text-white placeholder-zinc-600 outline-none disabled:opacity-50"
           />
+
+          {imagePreview && (
+            <div className="relative mb-3 mt-2 overflow-hidden rounded-xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imagePreview}
+                alt="Gorsel onizleme"
+                className="max-h-80 w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:opacity-80"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
 
           {suggestedTags.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
@@ -127,31 +181,50 @@ export default function CreatePostForm() {
           )}
 
           <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
-            <button
-              type="button"
-              onClick={handleAIOptimize}
-              disabled={isAIDisabled}
-              className="flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-violet-500/50 hover:text-violet-400 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isLoadingAI ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>İyileştiriliyor...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={14} />
-                  <span>✨ AI ile İyileştir</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={loading || isLoadingAI}
+                className="flex items-center justify-center rounded-full p-2 text-blue-400 transition-colors hover:bg-blue-400/10 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Gorsel ekle"
+              >
+                <ImagePlus size={18} />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAIOptimize}
+                disabled={isAIDisabled}
+                className="flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-violet-500/50 hover:text-violet-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isLoadingAI ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Iyilestiriliyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <span>AI ile Iyilestir</span>
+                  </>
+                )}
+              </button>
+            </div>
 
             <button
               type="submit"
               disabled={loading || isLoadingAI}
               className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? "Paylaşılıyor..." : "Paylaş"}
+              {loading ? "Paylasiliyor..." : "Paylas"}
             </button>
           </div>
         </form>

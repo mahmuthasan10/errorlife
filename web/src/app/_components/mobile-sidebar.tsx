@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Home, Briefcase, Bell, Mail, User, LogOut, X } from "lucide-react";
+import { Home, Search, Briefcase, Bell, Mail, User, LogOut, X } from "lucide-react";
 import { logout } from "@/app/actions";
 
 interface MobileSidebarProps {
@@ -14,6 +14,7 @@ interface MobileSidebarProps {
 
 const navItems = [
   { href: "/", icon: Home, label: "Ana Sayfa" },
+  { href: "/search", icon: Search, label: "Keşfet" },
   { href: "/jobs", icon: Briefcase, label: "İlanlar" },
   { href: "/notifications", icon: Bell, label: "Bildirimler" },
   { href: "/messages", icon: Mail, label: "Mesajlar" },
@@ -34,7 +35,7 @@ export default function MobileSidebar({
   return (
     <>
       {/* Mobil üst bar — sadece mobilde, chat odalarında gizli */}
-      <div className={`sticky top-0 z-30 items-center border-b border-zinc-800 bg-black/80 px-4 py-2.5 backdrop-blur-md md:hidden ${isChatRoom ? "hidden" : "flex"}`}>
+      <div className={`sticky top-0 z-30 items-center border-b border-zinc-800 bg-black px-4 py-2.5 md:hidden ${isChatRoom ? "hidden" : "flex"}`}>
         <button
           onClick={() => setOpen(true)}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"

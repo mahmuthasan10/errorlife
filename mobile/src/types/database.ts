@@ -28,6 +28,7 @@ export type Database = {
           bio?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       posts: {
         Row: {
@@ -60,6 +61,15 @@ export type Database = {
           bookmark_count?: number;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       jobs: {
         Row: {
@@ -89,6 +99,15 @@ export type Database = {
           status?: "open" | "in_progress" | "closed";
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "jobs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       tags: {
         Row: {
@@ -107,6 +126,7 @@ export type Database = {
           name?: string;
           slug?: string;
         };
+        Relationships: [];
       };
       post_tags: {
         Row: {
@@ -121,6 +141,22 @@ export type Database = {
           post_id?: string;
           tag_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "post_tags_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       job_tags: {
         Row: {
@@ -135,6 +171,22 @@ export type Database = {
           job_id?: string;
           tag_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "job_tags_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       likes: {
         Row: {
@@ -153,6 +205,22 @@ export type Database = {
           user_id?: string;
           post_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "likes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "likes_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       bookmarks: {
         Row: {
@@ -171,6 +239,22 @@ export type Database = {
           user_id?: string;
           post_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       comments: {
         Row: {
@@ -193,7 +277,107 @@ export type Database = {
           content?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
       };
+      chats: {
+        Row: {
+          id: string;
+          user1_id: string;
+          user2_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user1_id: string;
+          user2_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user1_id?: string;
+          user2_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chats_user1_id_fkey";
+            columns: ["user1_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chats_user2_id_fkey";
+            columns: ["user2_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      messages: {
+        Row: {
+          id: string;
+          chat_id: string;
+          sender_id: string;
+          content: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          sender_id: string;
+          content: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          content?: string;
+          is_read?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey";
+            columns: ["chat_id"];
+            isOneToOne: false;
+            referencedRelation: "chats";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 };
@@ -224,4 +408,15 @@ export type JobWithAuthor = Job & {
 // Comment + Profile birleşik tip
 export type CommentWithAuthor = Comment & {
   profiles: Profile;
+};
+
+// Chat ve Message tipleri
+export type Chat = Database["public"]["Tables"]["chats"]["Row"];
+export type Message = Database["public"]["Tables"]["messages"]["Row"];
+
+// Inbox için birleşik tip
+export type ChatWithDetails = Chat & {
+  otherUser: Profile;
+  lastMessage: Message | null;
+  unreadCount: number;
 };
