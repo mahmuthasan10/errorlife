@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { loadMoreFeedPosts } from "@/app/actions/pagination";
 import type { PostWithAuthor } from "@/types/database";
 import DeletePostButton from "./delete-post-button";
+import { usePostFeed } from "./post-feed-context";
+
+const PAGE_SIZE = 20;
 import {
   LikeButton,
   BookmarkButton,
@@ -39,14 +44,18 @@ export default function RealtimeFeed({
   likedPostIds,
   bookmarkedPostIds,
 }: RealtimeFeedProps) {
+  const { isPendingPost, pendingContent } = usePostFeed();
   const [posts, setPosts] = useState<PostWithAuthor[]>(initialPosts);
+  const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
   const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set(likedPostIds));
   const [bookmarkedSet, setBookmarkedSet] = useState<Set<string>>(() => new Set(bookmarkedPostIds));
+  const [isLoadingMore, startLoadMore] = useTransition();
 
   // Server revalidation'dan gelen prop değişikliklerini state'e senkronize et
   const postsKey = useMemo(() => initialPosts.map((p) => `${p.id}:${p.updated_at}`).join(), [initialPosts]);
   useEffect(() => {
     setPosts(initialPosts);
+    setHasMore(initialPosts.length === PAGE_SIZE);
   }, [postsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const likedKey = useMemo(() => likedPostIds.join(), [likedPostIds]);
@@ -185,7 +194,17 @@ export default function RealtimeFeed({
     };
   }, [currentUserId]);
 
-  if (posts.length === 0) {
+  function handleLoadMore() {
+    const cursor = posts[posts.length - 1]?.created_at;
+    if (!cursor || isLoadingMore) return;
+    startLoadMore(async () => {
+      const more = await loadMoreFeedPosts(cursor);
+      if (more.length > 0) setPosts((prev) => [...prev, ...more]);
+      setHasMore(more.length === PAGE_SIZE);
+    });
+  }
+
+  if (posts.length === 0 && !isPendingPost) {
     return (
       <div className="px-4 py-12 text-center text-zinc-500">
         <p className="text-lg">Henüz gönderi yok.</p>
@@ -196,6 +215,24 @@ export default function RealtimeFeed({
 
   return (
     <>
+      {/* Optimistic pending post skeleton */}
+      {isPendingPost && (
+        <article className="animate-pulse border-b border-zinc-800 px-4 py-3">
+          <div className="flex gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-zinc-800" />
+            <div className="flex-1 space-y-2 pt-1">
+              <div className="flex gap-2">
+                <div className="h-3 w-24 rounded bg-zinc-800" />
+                <div className="h-3 w-16 rounded bg-zinc-800" />
+              </div>
+              <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-400/70">
+                {pendingContent}
+              </p>
+            </div>
+          </div>
+        </article>
+      )}
+
       {posts.map((post) => (
         <PostCard
           key={post.id}
@@ -205,6 +242,25 @@ export default function RealtimeFeed({
           isBookmarked={bookmarkedSet.has(post.id)}
         />
       ))}
+
+      {hasMore && (
+        <div className="py-6 text-center">
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="rounded-full border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoadingMore ? (
+              <span className="flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin" />
+                Yükleniyor...
+              </span>
+            ) : (
+              "Daha Fazla Yükle"
+            )}
+          </button>
+        </div>
+      )}
     </>
   );
 }

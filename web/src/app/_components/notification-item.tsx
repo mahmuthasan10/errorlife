@@ -75,6 +75,11 @@ export default function NotificationItem({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Actor hesabı silinmişse null gelir — çökmeyi önle
+  if (!notification.actor) {
+    return null;
+  }
+
   const config = NOTIFICATION_CONFIG[notification.type];
   const Icon = config.icon;
 

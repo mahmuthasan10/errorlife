@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getUserProfile, getFollowing } from "@/lib/profile-queries";
-import UserListItem from "../_components/user-list-item";
+import UsersListClient from "../_components/users-list-client";
 
 interface FollowingPageProps {
   params: Promise<{ username: string }>;
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: FollowingPageProps) {
 export default async function FollowingPage({ params }: FollowingPageProps) {
   const { username } = await params;
 
-  const [profile, following] = await Promise.all([
+  const [profile, { profiles: following, nextCursor }] = await Promise.all([
     getUserProfile(username),
     getFollowing(username),
   ]);
@@ -42,11 +42,20 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
       {/* Takip edilen listesi */}
       {following.length === 0 ? (
         <div className="px-4 py-12 text-center text-zinc-500">
-          <p className="text-lg font-bold text-white">Henüz kimseyi takip etmiyor</p>
-          <p className="mt-1 text-sm">Bu hesap henüz kimseyi takip etmiyor.</p>
+          <p className="text-lg font-bold text-white">
+            Henüz kimseyi takip etmiyor
+          </p>
+          <p className="mt-1 text-sm">
+            Bu hesap henüz kimseyi takip etmiyor.
+          </p>
         </div>
       ) : (
-        following.map((user) => <UserListItem key={user.id} user={user} />)
+        <UsersListClient
+          initialUsers={following}
+          username={username}
+          mode="following"
+          initialCursor={nextCursor}
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import type { NotificationWithActor, Profile } from "@/types/database";
 
-const NOTIFICATIONS_LIMIT = 50;
+const NOTIFICATIONS_LIMIT = 20;
 
 /**
  * Mevcut kullanıcının bildirimlerini, actor profil bilgisiyle birlikte döndürür.

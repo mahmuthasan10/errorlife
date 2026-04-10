@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Check } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "@/app/actions/settings";
 import type { Profile } from "@/types/database";
@@ -15,6 +15,7 @@ export default function SettingsForm({ profile }: SettingsFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -122,20 +123,32 @@ export default function SettingsForm({ profile }: SettingsFormProps) {
               name="newPassword"
               type={showPassword ? "text" : "password"}
               placeholder="Değiştirmek istemiyorsanız boş bırakın"
-              minLength={6}
+              minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 pr-12 text-white placeholder-zinc-600 outline-none transition-colors focus:border-zinc-600"
+              onChange={(e) => setPasswordValue(e.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 pr-20 text-white placeholder-zinc-600 outline-none transition-colors focus:border-zinc-600"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+            <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+              {passwordValue.length > 0 && (
+                <span
+                  className={`transition-colors ${
+                    passwordValue.length >= 8 ? "text-green-400" : "text-zinc-600"
+                  }`}
+                >
+                  <Check size={16} />
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="text-zinc-500 transition-colors hover:text-zinc-300"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
           <p className="mt-1 text-xs text-zinc-600">
-            En az 6 karakter. Boş bırakırsanız şifreniz değişmez.
+            En az 8 karakter. Boş bırakırsanız şifreniz değişmez.
           </p>
         </div>
       </div>

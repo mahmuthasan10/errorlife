@@ -23,7 +23,6 @@ export async function getUserProfile(
 
   const supabase = await createClient();
 
-  // Profil bilgilerini ve oturumdaki kullanıcıyı paralel çek
   const [profileResult, authResult] = await Promise.all([
     supabase
       .from("profiles")
@@ -40,12 +39,10 @@ export async function getUserProfile(
   const profile = profileResult.data;
   const currentUser = authResult.data?.user;
 
-  // Oturum açık kullanıcı yoksa veya kendi profiliyse isFollowing: false
   if (!currentUser || currentUser.id === profile.id) {
     return { ...profile, isFollowing: false };
   }
 
-  // Takip durumunu kontrol et
   const { data: followRecord } = await supabase
     .from("follows")
     .select("id")
@@ -76,7 +73,7 @@ const JOB_SELECT = `
   )
 ` as const;
 
-const FEED_LIMIT = 30;
+const FEED_LIMIT = 20;
 
 export async function getUserPosts(
   userId: string
@@ -99,27 +96,34 @@ export async function getUserPosts(
 
 export async function getUserLikedPosts(
   userId: string
-): Promise<PostWithAuthor[]> {
+): Promise<{ posts: PostWithAuthor[]; nextCursor: string | null }> {
   const parsed = userIdSchema.safeParse(userId);
-  if (!parsed.success) return [];
+  if (!parsed.success) return { posts: [], nextCursor: null };
 
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("likes")
-    .select(`post_id, posts (${POST_SELECT})`)
+    .select(`post_id, created_at, posts (${POST_SELECT})`)
     .eq("user_id", parsed.data)
     .order("created_at", { ascending: false })
     .limit(FEED_LIMIT);
 
-  if (error || !data) return [];
+  if (error || !data) return { posts: [], nextCursor: null };
 
-  return data
+  const posts = data
     .map((row) => row.posts)
     .filter((p): p is PostWithAuthor => p !== null);
+
+  const nextCursor =
+    data.length === FEED_LIMIT ? data[data.length - 1].created_at : null;
+
+  return { posts, nextCursor };
 }
 
-export async function getFollowers(username: string): Promise<Profile[]> {
+export async function getFollowers(
+  username: string
+): Promise<{ profiles: Profile[]; nextCursor: string | null }> {
   const supabase = await createClient();
 
   const { data: profile } = await supabase
@@ -128,19 +132,27 @@ export async function getFollowers(username: string): Promise<Profile[]> {
     .eq("username", username)
     .maybeSingle();
 
-  if (!profile) return [];
+  if (!profile) return { profiles: [], nextCursor: null };
 
   const { data, error } = await supabase
     .from("follows")
-    .select("follower:profiles!follows_follower_id_fkey(*)")
+    .select("follower:profiles!follows_follower_id_fkey(*), created_at")
     .eq("following_id", profile.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(FEED_LIMIT);
 
-  if (error || !data) return [];
-  return data.map((row) => row.follower as unknown as Profile);
+  if (error || !data) return { profiles: [], nextCursor: null };
+
+  const profiles = data.map((row) => row.follower as unknown as Profile);
+  const nextCursor =
+    data.length === FEED_LIMIT ? data[data.length - 1].created_at : null;
+
+  return { profiles, nextCursor };
 }
 
-export async function getFollowing(username: string): Promise<Profile[]> {
+export async function getFollowing(
+  username: string
+): Promise<{ profiles: Profile[]; nextCursor: string | null }> {
   const supabase = await createClient();
 
   const { data: profile } = await supabase
@@ -149,16 +161,22 @@ export async function getFollowing(username: string): Promise<Profile[]> {
     .eq("username", username)
     .maybeSingle();
 
-  if (!profile) return [];
+  if (!profile) return { profiles: [], nextCursor: null };
 
   const { data, error } = await supabase
     .from("follows")
-    .select("following:profiles!follows_following_id_fkey(*)")
+    .select("following:profiles!follows_following_id_fkey(*), created_at")
     .eq("follower_id", profile.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(FEED_LIMIT);
 
-  if (error || !data) return [];
-  return data.map((row) => row.following as unknown as Profile);
+  if (error || !data) return { profiles: [], nextCursor: null };
+
+  const profiles = data.map((row) => row.following as unknown as Profile);
+  const nextCursor =
+    data.length === FEED_LIMIT ? data[data.length - 1].created_at : null;
+
+  return { profiles, nextCursor };
 }
 
 export async function getUserJobs(

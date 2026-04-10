@@ -5,8 +5,10 @@ import { User, Sparkles, Loader2, X, ImagePlus } from "lucide-react";
 import { createPost } from "@/app/actions";
 import { optimizePostContent } from "@/app/actions/ai";
 import { uploadPostImage } from "@/app/actions/upload";
+import { usePostFeed } from "./post-feed-context";
 
 export default function CreatePostForm() {
+  const { setPendingPost, clearPendingPost } = usePostFeed();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -23,6 +25,8 @@ export default function CreatePostForm() {
   async function handleSubmit(formData: FormData) {
     setError(null);
     setLoading(true);
+    // Optimistic: immediately show a pending skeleton in the feed
+    setPendingPost(content.trim());
 
     try {
       if (suggestedTags.length > 0) {
@@ -34,6 +38,7 @@ export default function CreatePostForm() {
         uploadFormData.set("file", imageFile);
         const uploadResult = await uploadPostImage(uploadFormData);
         if (uploadResult.error) {
+          clearPendingPost();
           setError(uploadResult.error);
           setLoading(false);
           return;
@@ -45,6 +50,7 @@ export default function CreatePostForm() {
 
       const result = await createPost(formData);
       if (result.error) {
+        clearPendingPost();
         setError(result.error);
       } else {
         setContent("");
@@ -55,8 +61,11 @@ export default function CreatePostForm() {
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
         }
+        // Realtime will fire with the real post; clear pending after a brief delay
+        setTimeout(clearPendingPost, 3000);
       }
     } catch {
+      clearPendingPost();
       setError("Beklenmeyen bir hata olustu. Lutfen tekrar deneyin.");
     } finally {
       setLoading(false);
@@ -110,11 +119,36 @@ export default function CreatePostForm() {
     setSuggestedTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   }
 
+  function extractHashtags(text: string): string[] {
+    const regex = /(?:^|\s)#([a-zA-Z0-9\u00C0-\u024F\u011F\u00FC\u015F\u00F6\u00E7\u0131\u0130\u011E\u00DC\u015E\u00D6\u00C7]{1,30})/g;
+    const found: string[] = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const tag = match[1].toLowerCase();
+      if (!found.includes(tag)) found.push(tag);
+    }
+    return found;
+  }
+
   function handleTextareaInput(e: React.FormEvent<HTMLTextAreaElement>) {
     const target = e.currentTarget;
-    setContent(target.value);
+    const newContent = target.value;
+    setContent(newContent);
     target.style.height = "auto";
     target.style.height = `${target.scrollHeight}px`;
+
+    // İçerikten hashtag'leri tespit et ve mevcut etiket listesiyle birleştir
+    const detected = extractHashtags(newContent);
+    setSuggestedTags((prev) => {
+      const merged = [...prev];
+      detected.forEach((tag) => {
+        if (!merged.includes(tag)) merged.push(tag);
+      });
+      // İçerikten kaldırılan hashtag'leri de listeden çıkar
+      return merged.filter(
+        (tag) => detected.includes(tag) || prev.includes(tag)
+      );
+    });
   }
 
   return (

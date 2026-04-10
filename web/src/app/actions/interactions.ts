@@ -17,33 +17,25 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
       return { error: "Beğenmek için giriş yapmalısınız." };
     }
 
-    // Mevcut beğeniyi kontrol et
-    const { data: existingLike } = await supabase
+    // Atomic toggle: önce INSERT dene, unique_violation → zaten var → DELETE
+    const { error: insertError } = await supabase
       .from("likes")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("post_id", postId)
-      .maybeSingle();
+      .insert({ user_id: user.id, post_id: postId });
 
-    if (existingLike) {
-      // Beğeniyi kaldır
-      const { error } = await supabase
-        .from("likes")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("post_id", postId);
+    if (insertError) {
+      if (insertError.code === "23505") {
+        // Zaten beğenilmiş → kaldır
+        const { error: delError } = await supabase
+          .from("likes")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("post_id", postId);
 
-      if (error) {
-        return { error: `Beğeni kaldırılamadı: ${error.message}` };
-      }
-    } else {
-      // Beğeni ekle — 23505 (unique_violation) idempotent: zaten beğenilmişse sessizce geç
-      const { error } = await supabase
-        .from("likes")
-        .insert({ user_id: user.id, post_id: postId });
-
-      if (error && error.code !== "23505") {
-        return { error: `Beğeni eklenemedi: ${error.message}` };
+        if (delError) {
+          return { error: `Beğeni kaldırılamadı: ${delError.message}` };
+        }
+      } else {
+        return { error: `Beğeni eklenemedi: ${insertError.message}` };
       }
     }
   } catch {
@@ -68,32 +60,25 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
       return { error: "Kaydetmek için giriş yapmalısınız." };
     }
 
-    // Mevcut yer imini kontrol et
-    const { data: existingBookmark } = await supabase
+    // Atomic toggle: önce INSERT dene, unique_violation → zaten var → DELETE
+    const { error: insertError } = await supabase
       .from("bookmarks")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("post_id", postId)
-      .maybeSingle();
+      .insert({ user_id: user.id, post_id: postId });
 
-    if (existingBookmark) {
-      const { error } = await supabase
-        .from("bookmarks")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("post_id", postId);
+    if (insertError) {
+      if (insertError.code === "23505") {
+        // Zaten kaydedilmiş → kaldır
+        const { error: delError } = await supabase
+          .from("bookmarks")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("post_id", postId);
 
-      if (error) {
-        return { error: `Yer imi kaldırılamadı: ${error.message}` };
-      }
-    } else {
-      // Bookmark ekle — 23505 (unique_violation) idempotent: zaten kaydedilmişse sessizce geç
-      const { error } = await supabase
-        .from("bookmarks")
-        .insert({ user_id: user.id, post_id: postId });
-
-      if (error && error.code !== "23505") {
-        return { error: `Yer imi eklenemedi: ${error.message}` };
+        if (delError) {
+          return { error: `Yer imi kaldırılamadı: ${delError.message}` };
+        }
+      } else {
+        return { error: `Yer imi eklenemedi: ${insertError.message}` };
       }
     }
   } catch {

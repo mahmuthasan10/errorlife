@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import { getUserNotifications } from "@/lib/notification-queries";
-import NotificationItem from "@/app/_components/notification-item";
+import NotificationsListClient from "./_components/notifications-list-client";
 
 export const metadata = {
   title: "Bildirimler | ErrorLife",
@@ -31,14 +31,7 @@ export default async function NotificationsPage() {
           </p>
         </div>
       ) : (
-        <div>
-          {notifications.map((notification) => (
-            <NotificationItem
-              key={notification.id}
-              notification={notification}
-            />
-          ))}
-        </div>
+        <NotificationsListClient initialNotifications={notifications} />
       )}
     </div>
   );

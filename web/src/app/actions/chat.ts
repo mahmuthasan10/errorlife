@@ -16,10 +16,16 @@ const messageSchema = z.object({
     .max(2000, "Mesaj en fazla 2000 karakter olabilir."),
 });
 
+const uuidSchema = z.string().uuid("Geçersiz kullanıcı kimliği.");
+
 export async function startChat(
   targetUserId: string
 ): Promise<{ chatId: string | null; error: string | null }> {
-  return getOrCreateChat(targetUserId);
+  const parsed = uuidSchema.safeParse(targetUserId);
+  if (!parsed.success) {
+    return { chatId: null, error: parsed.error.issues[0].message };
+  }
+  return getOrCreateChat(parsed.data);
 }
 
 export async function markMessagesAsRead(

@@ -1,119 +1,68 @@
-import {
-  Briefcase,
-  Clock,
-  DollarSign,
-  ArrowLeft,
-  Send,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import type { JobWithAuthor, BidWithJob } from "@/types/database";
+import CreateJobForm from "@/app/_components/create-job-form";
+import {
+  OpenJobsList,
+  MyJobsList,
+  MyBidsList,
+} from "./_components/jobs-feed-client";
 
 export const metadata: Metadata = {
   title: "İlanlar | ErrorLife",
   description: "Freelance iş ilanlarını keşfedin ve teklif verin.",
 };
-import CreateJobForm from "@/app/_components/create-job-form";
 
-// ── Veri Çekme ────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
+const JOB_SELECT = `
+  *,
+  profiles (*),
+  job_tags (tags (*))
+` as const;
+
+const BID_SELECT = `
+  *,
+  jobs (*, profiles (*))
+` as const;
 
 async function getOpenJobs(): Promise<JobWithAuthor[]> {
   const supabase = await createClient();
-
   const { data, error } = await supabase
     .from("jobs")
-    .select(`
-      *,
-      profiles (*),
-      job_tags (
-        tags (*)
-      )
-    `)
+    .select(JOB_SELECT)
     .eq("status", "open")
-    .order("created_at", { ascending: false });
-
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
   if (error) return [];
   return (data as JobWithAuthor[]) ?? [];
 }
 
 async function getMyJobs(userId: string): Promise<JobWithAuthor[]> {
   const supabase = await createClient();
-
   const { data, error } = await supabase
     .from("jobs")
-    .select(`
-      *,
-      profiles (*),
-      job_tags (
-        tags (*)
-      )
-    `)
+    .select(JOB_SELECT)
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
   if (error) return [];
   return (data as JobWithAuthor[]) ?? [];
 }
 
 async function getMyBids(userId: string): Promise<BidWithJob[]> {
   const supabase = await createClient();
-
   const { data, error } = await supabase
     .from("bids")
-    .select(`
-      *,
-      jobs (
-        *,
-        profiles (*)
-      )
-    `)
+    .select(BID_SELECT)
     .eq("expert_id", userId)
-    .order("created_at", { ascending: false });
-
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
   if (error) return [];
   return (data as BidWithJob[]) ?? [];
 }
-
-// ── Yardımcı ──────────────────────────────────────────────
-
-function formatRelativeTime(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffMin < 1) return "az önce";
-  if (diffMin < 60) return `${diffMin}dk`;
-  if (diffHour < 24) return `${diffHour}sa`;
-  if (diffDay < 30) return `${diffDay}g`;
-  return date.toLocaleDateString("tr-TR");
-}
-
-const jobStatusMap: Record<string, { label: string; className: string }> = {
-  open: { label: "Açık", className: "text-green-400" },
-  in_progress: { label: "Devam Ediyor", className: "text-yellow-400" },
-  closed: { label: "Kapalı", className: "text-zinc-500" },
-};
-
-const bidStatusMap: Record<string, { label: string; className: string }> = {
-  pending: {
-    label: "Beklemede",
-    className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  },
-  accepted: {
-    label: "Kabul Edildi",
-    className: "bg-green-500/10 text-green-400 border-green-500/20",
-  },
-  rejected: {
-    label: "Reddedildi",
-    className: "bg-red-500/10 text-red-400 border-red-500/20",
-  },
-};
-
-// ── Tab Sabitleri ─────────────────────────────────────────
 
 type TabKey = "all" | "my-jobs" | "my-bids";
 
@@ -122,8 +71,6 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "my-jobs", label: "Benim İlanlarım" },
   { key: "my-bids", label: "Verdiğim Teklifler" },
 ];
-
-// ── Sayfa ─────────────────────────────────────────────────
 
 interface JobsPageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -138,7 +85,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Tab'a göre veri çek
   let jobs: JobWithAuthor[] = [];
   let myBids: BidWithJob[] = [];
 
@@ -188,155 +134,16 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
         </div>
       </div>
 
-      {/* İlan Oluştur — sadece "all" ve "my-jobs" tablarında */}
+      {/* İlan Oluştur */}
       {activeTab !== "my-bids" && <CreateJobForm />}
 
       {/* İçerik */}
       {activeTab === "my-bids" ? (
-        /* ── Verdiğim Teklifler ── */
-        myBids.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-zinc-500">
-            <Send size={48} strokeWidth={1.5} />
-            <p className="text-lg">Henüz teklif vermediniz.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-zinc-800">
-            {myBids.map((bid) => {
-              const job = bid.jobs;
-              const bidStatus = bidStatusMap[bid.status] ?? bidStatusMap.pending;
-              const jStatus = jobStatusMap[job.status] ?? jobStatusMap.open;
-
-              return (
-                <Link
-                  key={bid.id}
-                  href={`/jobs/${job.id}`}
-                  className="block px-4 py-4 transition-colors hover:bg-zinc-950"
-                >
-                  {/* İlan Başlığı & Durum */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-base font-semibold text-white">
-                        {job.title}
-                      </h3>
-                      <p className="mt-0.5 text-sm text-zinc-500">
-                        @{job.profiles.username} &middot;{" "}
-                        {formatRelativeTime(job.created_at)}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${bidStatus.className}`}
-                    >
-                      {bidStatus.label}
-                    </span>
-                  </div>
-
-                  {/* Teklif Detayları */}
-                  <div className="mt-2 flex items-center gap-4 text-sm text-zinc-400">
-                    <div className="flex items-center gap-1">
-                      <DollarSign size={14} />
-                      <span>{bid.amount.toLocaleString("tr-TR")} ₺</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock size={14} />
-                      <span>{bid.estimated_days} gün</span>
-                    </div>
-                    <span className={`ml-auto text-xs ${jStatus.className}`}>
-                      İlan: {jStatus.label}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )
-      ) : /* ── Açık İlanlar / Benim İlanlarım ── */
-      jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-zinc-500">
-          <Briefcase size={48} strokeWidth={1.5} />
-          <p className="text-lg">
-            {activeTab === "my-jobs"
-              ? "Henüz ilan oluşturmadınız."
-              : "Henüz açık ilan bulunmuyor."}
-          </p>
-        </div>
+        <MyBidsList initialBids={myBids} userId={user?.id ?? ""} />
+      ) : activeTab === "my-jobs" ? (
+        <MyJobsList initialJobs={jobs} userId={user?.id ?? ""} />
       ) : (
-        <div className="divide-y divide-zinc-800">
-          {jobs.map((job) => {
-            const jStatus = jobStatusMap[job.status] ?? jobStatusMap.open;
-
-            return (
-              <Link
-                key={job.id}
-                href={`/jobs/${job.id}`}
-                className="flex gap-3 px-4 py-4 transition-colors hover:bg-zinc-950"
-              >
-                {/* Avatar */}
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-bold text-white">
-                  {job.profiles.display_name?.charAt(0).toUpperCase() ?? "?"}
-                </div>
-
-                {/* Content */}
-                <div className="min-w-0 flex-1">
-                  {/* Meta */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="truncate font-bold text-white">
-                      {job.profiles.display_name}
-                    </span>
-                    <span className="text-zinc-500">
-                      @{job.profiles.username}
-                    </span>
-                    <span className="text-zinc-600">&middot;</span>
-                    <span className="text-zinc-500">
-                      {formatRelativeTime(job.created_at)}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="mt-1 text-lg font-semibold text-white">
-                    {job.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="mt-1 line-clamp-3 text-zinc-400">
-                    {job.description}
-                  </p>
-
-                  {/* Tags */}
-                  {job.job_tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {job.job_tags.map((jt) => (
-                        <span
-                          key={jt.tags.id}
-                          className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300"
-                        >
-                          #{jt.tags.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Footer — Budget & Status */}
-                  <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
-                    {job.budget && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign size={14} />
-                        <span>
-                          {job.budget.toLocaleString("tr-TR")} TL
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Clock size={14} />
-                      <span className={jStatus.className}>
-                        {jStatus.label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <OpenJobsList initialJobs={jobs} />
       )}
     </div>
   );

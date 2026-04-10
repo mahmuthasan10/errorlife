@@ -5,6 +5,7 @@ import type { PostWithAuthor } from "@/types/database";
 import { getTrendingTags } from "@/lib/tag-queries";
 import CreatePostForm from "./_components/create-post-form";
 import RealtimeFeed from "./_components/realtime-feed";
+import { PostFeedProvider } from "./_components/post-feed-context";
 
 async function getPosts(): Promise<PostWithAuthor[]> {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ async function getPosts(): Promise<PostWithAuthor[]> {
       )
     `)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(20);
 
   if (error) {
     return [];
@@ -75,17 +76,19 @@ export default async function HomePage() {
         </div>
 
         {/* Sorun paylaş formu */}
-        <div id="compose">
-          <CreatePostForm />
-        </div>
+        <PostFeedProvider>
+          <div id="compose">
+            <CreatePostForm />
+          </div>
 
-        {/* Gönderi listesi — Realtime */}
-        <RealtimeFeed
-          initialPosts={posts}
-          currentUserId={currentUserId}
-          likedPostIds={Array.from(likedPostIds)}
-          bookmarkedPostIds={Array.from(bookmarkedPostIds)}
-        />
+          {/* Gönderi listesi — Realtime */}
+          <RealtimeFeed
+            initialPosts={posts}
+            currentUserId={currentUserId}
+            likedPostIds={Array.from(likedPostIds)}
+            bookmarkedPostIds={Array.from(bookmarkedPostIds)}
+          />
+        </PostFeedProvider>
       </main>
 
       {/* Sağ Kolon — Trend Etiketler */}

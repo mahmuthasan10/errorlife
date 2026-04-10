@@ -30,7 +30,8 @@ export async function getUserChats(): Promise<ChatWithDetails[]> {
     `
     )
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(30);
 
   if (chatsError || !chats || chats.length === 0) {
     return [];

@@ -2,7 +2,7 @@
 
 import { useEffect, createElement } from "react";
 import { toast } from "sonner";
-import { UserCheck, Heart, MessageCircle, DollarSign } from "lucide-react";
+import { UserCheck, Heart, MessageCircle, DollarSign, MessageSquare } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 interface NotificationProviderProps {
@@ -10,7 +10,7 @@ interface NotificationProviderProps {
 }
 
 interface NotificationPayload {
-  type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE";
+  type: "FOLLOW" | "BID" | "MESSAGE" | "LIKE" | "COMMENT";
   actor_id: string;
   entity_id: string | null;
 }
@@ -38,6 +38,11 @@ const NOTIFICATION_CONFIG: Record<
     text: "Gönderini birisi beğendi!",
     icon: Heart,
     iconClass: "text-red-500 fill-red-500",
+  },
+  COMMENT: {
+    text: "Gönderine yeni bir yorum yapıldı!",
+    icon: MessageSquare,
+    iconClass: "text-orange-400",
   },
 };
 

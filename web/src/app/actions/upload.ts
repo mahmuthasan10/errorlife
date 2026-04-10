@@ -8,6 +8,23 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 const COVER_MAX_BYTES = 4 * 1024 * 1024;  // 4 MB
 
+// Magic bytes: dosya içeriği MIME type ile uyuşuyor mu?
+const MAGIC_BYTES: Record<string, number[][]> = {
+  "image/jpeg": [[0xff, 0xd8, 0xff]],
+  "image/png":  [[0x89, 0x50, 0x4e, 0x47]],
+  "image/gif":  [[0x47, 0x49, 0x46, 0x38]],
+  "image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF header — WebP
+};
+
+async function validateMagicBytes(file: File): Promise<boolean> {
+  const signatures = MAGIC_BYTES[file.type];
+  if (!signatures) return false;
+  const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  return signatures.some((sig) =>
+    sig.every((byte, i) => header[i] === byte)
+  );
+}
+
 async function getAuthenticatedUser() {
   const supabase = await createClient();
   const {
@@ -41,6 +58,10 @@ export async function uploadAvatar(formData: FormData): Promise<SettingsResult> 
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     return { error: "Yalnızca JPEG, PNG, WebP veya GIF yükleyebilirsiniz.", success: null };
+  }
+
+  if (!(await validateMagicBytes(file))) {
+    return { error: "Dosya içeriği geçersiz veya bozuk.", success: null };
   }
 
   if (file.size > AVATAR_MAX_BYTES) {
@@ -124,6 +145,10 @@ export async function uploadPostImage(
     return { error: "Yalnızca JPEG, PNG, WebP veya GIF yükleyebilirsiniz.", url: null };
   }
 
+  if (!(await validateMagicBytes(file))) {
+    return { error: "Dosya içeriği geçersiz veya bozuk.", url: null };
+  }
+
   if (file.size > POST_IMAGE_MAX_BYTES) {
     return { error: "Gönderi görseli en fazla 5 MB olabilir.", url: null };
   }
@@ -159,6 +184,10 @@ export async function uploadCover(formData: FormData): Promise<SettingsResult> {
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     return { error: "Yalnızca JPEG, PNG, WebP veya GIF yükleyebilirsiniz.", success: null };
+  }
+
+  if (!(await validateMagicBytes(file))) {
+    return { error: "Dosya içeriği geçersiz veya bozuk.", success: null };
   }
 
   if (file.size > COVER_MAX_BYTES) {

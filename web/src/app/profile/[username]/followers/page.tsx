@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getUserProfile, getFollowers } from "@/lib/profile-queries";
-import UserListItem from "../_components/user-list-item";
+import UsersListClient from "../_components/users-list-client";
 
 interface FollowersPageProps {
   params: Promise<{ username: string }>;
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: FollowersPageProps) {
 export default async function FollowersPage({ params }: FollowersPageProps) {
   const { username } = await params;
 
-  const [profile, followers] = await Promise.all([
+  const [profile, { profiles: followers, nextCursor }] = await Promise.all([
     getUserProfile(username),
     getFollowers(username),
   ]);
@@ -46,7 +46,12 @@ export default async function FollowersPage({ params }: FollowersPageProps) {
           <p className="mt-1 text-sm">Bu hesabı takip eden kimse yok.</p>
         </div>
       ) : (
-        followers.map((user) => <UserListItem key={user.id} user={user} />)
+        <UsersListClient
+          initialUsers={followers}
+          username={username}
+          mode="followers"
+          initialCursor={nextCursor}
+        />
       )}
     </div>
   );

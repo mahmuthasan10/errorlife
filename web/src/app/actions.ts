@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { slugify } from "@/lib/utils";
 
@@ -14,8 +15,21 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
 
   const content = (formData.get("content") as string)?.trim();
   const tagsRaw = formData.get("tags") as string | null;
-  const tags: string[] = tagsRaw ? JSON.parse(tagsRaw) : [];
   const imageUrl = (formData.get("image_url") as string | null) || null;
+
+  let tags: string[] = [];
+  if (tagsRaw) {
+    try {
+      const raw = JSON.parse(tagsRaw);
+      const tagsResult = z.array(z.string().min(1).max(50)).max(10).safeParse(raw);
+      if (!tagsResult.success) {
+        return { error: "Geçersiz etiket formatı." };
+      }
+      tags = tagsResult.data;
+    } catch {
+      return { error: "Etiketler ayrıştırılamadı." };
+    }
+  }
 
   if (!content) {
     return { error: "Gönderi içeriği boş olamaz." };
@@ -38,7 +52,6 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     const tagObjects = tags.map((name) => ({ name, slug: slugify(name) }));
 
     const { error: rpcError } = await supabase.rpc("create_post_with_tags", {
-      p_user_id: user.id,
       p_content: content,
       p_image_url: imageUrl,
       p_tags: tagObjects,

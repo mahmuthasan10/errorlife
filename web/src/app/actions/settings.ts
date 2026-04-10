@@ -20,8 +20,8 @@ const updateProfileSchema = z.object({
     .string()
     .optional()
     .refine(
-      (val) => !val || val.length >= 6,
-      "Şifre en az 6 karakter olmalıdır."
+      (val) => !val || val.length >= 8,
+      "Şifre en az 8 karakter olmalıdır."
     ),
 });
 
