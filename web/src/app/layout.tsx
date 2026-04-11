@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { createClient } from "@/utils/supabase/server";
 import NotificationProvider from "./_components/notification-provider";
+import { BadgeProvider } from "./_components/badge-provider";
 import Sidebar from "./_components/sidebar";
 import BottomNav from "./_components/bottom-nav";
 import MobileSidebar from "./_components/mobile-sidebar";
@@ -53,7 +54,7 @@ export default async function RootLayout({
     currentUsername = profileResult.data?.username ?? null;
     displayName = profileResult.data?.display_name ?? null;
 
-    if (badgeResult.data && badgeResult.data[0]) {
+    if (badgeResult.data?.[0]) {
       unreadNotifCount = Number(badgeResult.data[0].notif_count ?? 0);
       unreadMessageCount = Number(badgeResult.data[0].message_count ?? 0);
     }
@@ -68,27 +69,24 @@ export default async function RootLayout({
       >
         {user && <NotificationProvider currentUserId={user.id} />}
 
-        {isAuth ? (
-          <>
+        {isAuth && user ? (
+          <BadgeProvider
+            initialNotifCount={unreadNotifCount}
+            initialMessageCount={unreadMessageCount}
+            currentUserId={user.id}
+          >
             <MobileSidebar
               currentUsername={currentUsername}
               displayName={displayName}
             />
             <div className="mx-auto flex min-h-screen max-w-7xl">
-              <Sidebar
-                currentUsername={currentUsername}
-                unreadNotifCount={unreadNotifCount}
-                unreadMessageCount={unreadMessageCount}
-              />
+              <Sidebar currentUsername={currentUsername} />
               <main className="min-w-0 flex-1 pb-14 md:pb-0">
                 {children}
               </main>
             </div>
-            <BottomNav
-              unreadNotifCount={unreadNotifCount}
-              unreadMessageCount={unreadMessageCount}
-            />
-          </>
+            <BottomNav />
+          </BadgeProvider>
         ) : (
           children
         )}

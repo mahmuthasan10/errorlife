@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, Briefcase, Bell, Mail } from "lucide-react";
-
-interface BottomNavProps {
-  unreadNotifCount: number;
-  unreadMessageCount: number;
-}
+import { useBadge } from "./badge-provider";
 
 function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -18,11 +14,9 @@ function Badge({ count }: { count: number }) {
   );
 }
 
-export default function BottomNav({
-  unreadNotifCount,
-  unreadMessageCount,
-}: BottomNavProps) {
+export default function BottomNav() {
   const pathname = usePathname();
+  const { notifCount, messageCount } = useBadge();
 
   const isChatRoom = /^\/messages\/.+/.test(pathname);
   if (isChatRoom) return null;
@@ -31,8 +25,8 @@ export default function BottomNav({
     { href: "/", icon: Home, label: "Ana Sayfa", badge: 0 },
     { href: "/search", icon: Search, label: "Keşfet", badge: 0 },
     { href: "/jobs", icon: Briefcase, label: "İlanlar", badge: 0 },
-    { href: "/notifications", icon: Bell, label: "Bildirimler", badge: unreadNotifCount },
-    { href: "/messages", icon: Mail, label: "Mesajlar", badge: unreadMessageCount },
+    { href: "/notifications", icon: Bell, label: "Bildirimler", badge: notifCount },
+    { href: "/messages", icon: Mail, label: "Mesajlar", badge: messageCount },
   ];
 
   return (

@@ -4,11 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, Briefcase, Bell, Mail, User, LogOut } from "lucide-react";
 import { logout } from "@/app/actions";
+import { useBadge } from "./badge-provider";
 
 interface SidebarProps {
   currentUsername: string | null;
-  unreadNotifCount: number;
-  unreadMessageCount: number;
 }
 
 function Badge({ count }: { count: number }) {
@@ -20,12 +19,9 @@ function Badge({ count }: { count: number }) {
   );
 }
 
-export default function Sidebar({
-  currentUsername,
-  unreadNotifCount,
-  unreadMessageCount,
-}: SidebarProps) {
+export default function Sidebar({ currentUsername }: SidebarProps) {
   const pathname = usePathname();
+  const { notifCount, messageCount } = useBadge();
 
   function isActive(href: string) {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -35,8 +31,8 @@ export default function Sidebar({
     { href: "/", icon: Home, label: "Ana Sayfa", badge: 0 },
     { href: "/search", icon: Search, label: "Keşfet", badge: 0 },
     { href: "/jobs", icon: Briefcase, label: "İlanlar", badge: 0 },
-    { href: "/notifications", icon: Bell, label: "Bildirimler", badge: unreadNotifCount },
-    { href: "/messages", icon: Mail, label: "Mesajlar", badge: unreadMessageCount },
+    { href: "/notifications", icon: Bell, label: "Bildirimler", badge: notifCount },
+    { href: "/messages", icon: Mail, label: "Mesajlar", badge: messageCount },
   ];
 
   return (
