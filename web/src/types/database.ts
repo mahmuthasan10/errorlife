@@ -838,3 +838,39 @@ export type Notification = {
 export type NotificationWithActor = Notification & {
   actor: Profile;
 };
+
+// ── 3-Sekmeli Bildirim Sistemi Tipleri ───────────────────────
+
+export type InteractionNotificationRow = {
+  kind: "comment" | "like";
+  notification_id: string | null;
+  post_id: string;
+  is_read: boolean;
+  latest_at: string;
+  actor_count: number;
+  latest_actor_id: string;
+  latest_actor_display_name: string;
+  latest_actor_username: string;
+  latest_actor_avatar_url: string | null;
+};
+
+export type FollowNotificationRow = {
+  notification_id: string;
+  actor_id: string;
+  is_read: boolean;
+  created_at: string;
+  actor_display_name: string;
+  actor_username: string;
+  actor_avatar_url: string | null;
+};
+
+export type MessageNotificationRow = {
+  chat_id: string;
+  other_user_id: string;
+  other_user_display_name: string;
+  other_user_username: string;
+  other_user_avatar_url: string | null;
+  last_message_content: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+};
