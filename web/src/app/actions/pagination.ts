@@ -1,10 +1,11 @@
 "use server";
 
-import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import type { PostWithAuthor, JobWithAuthor, BidWithJob, Profile, NotificationWithActor } from "@/types/database";
+import { uuidSchema, LIMITS } from "@/lib/schemas";
+import { z } from "zod";
+import type { PostWithAuthor, JobWithAuthor, BidWithJob, Profile, NotificationWithActor, NotificationType } from "@/types/database";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = LIMITS.pagination.pageSize;
 
 const POST_SELECT = `
   *,
@@ -18,7 +19,6 @@ const JOB_SELECT = `
   job_tags (tags (*))
 ` as const;
 
-const uuidSchema = z.string().uuid();
 const cursorSchema = z.string().min(1);
 
 // ── Ana sayfa feed ────────────────────────────────────────────
@@ -271,7 +271,7 @@ export async function loadMoreNotifications(
     id: item.id,
     user_id: item.user_id,
     actor_id: item.actor_id,
-    type: item.type,
+    type: item.type as NotificationType,
     entity_id: item.entity_id,
     is_read: item.is_read,
     created_at: item.created_at,

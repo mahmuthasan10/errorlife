@@ -1,13 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { followSchema } from "@/lib/schemas";
 import type { ActionResult } from "../actions";
-
-const followSchema = z.object({
-  targetUserId: z.string().uuid("Geçersiz kullanıcı ID formatı."),
-});
 
 export async function toggleFollowUser(
   targetUserId: string
@@ -15,7 +11,7 @@ export async function toggleFollowUser(
   const parsed = followSchema.safeParse({ targetUserId });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    return { error: parsed.error.issues[0]?.message ?? "Geçersiz kullanıcı ID." };
   }
 
   const supabase = await createClient();
@@ -70,7 +66,6 @@ export async function toggleFollowUser(
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
   }
 
-  // Hedef kullanıcının username'ini bilmediğimiz için genel profil path'ini revalidate et
   revalidatePath("/", "layout");
   return { error: null };
 }

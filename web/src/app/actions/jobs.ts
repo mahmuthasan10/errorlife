@@ -2,25 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { z } from "zod";
+import { uuidSchema, createJobSchema, createBidSchema } from "@/lib/schemas";
 import type { ActionResult } from "../actions";
-
-const uuidSchema = z.string().uuid("Geçersiz ID formatı.");
 
 // ── createJob ─────────────────────────────────────────────────
 export async function createJob(formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient();
-
-  const rawTitle = formData.get("title") as string | null;
-  const rawDescription = formData.get("description") as string | null;
   const rawBudget = formData.get("budget") as string | null;
   const budget = rawBudget && rawBudget.trim() !== "" ? parseFloat(rawBudget) : null;
 
+  const parsed = createJobSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    budget,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Geçersiz veri." };
+  }
+
+  const supabase = await createClient();
+
   try {
     const { error } = await supabase.rpc("create_job", {
-      p_title: rawTitle ?? "",
-      p_description: rawDescription ?? "",
-      p_budget: budget,
+      p_title: parsed.data.title,
+      p_description: parsed.data.description,
+      p_budget: parsed.data.budget ?? undefined,
     });
 
     if (error) {
@@ -39,21 +45,28 @@ export async function createBid(
   jobId: string,
   formData: FormData
 ): Promise<ActionResult> {
-  const parsedJobId = uuidSchema.safeParse(jobId);
-  if (!parsedJobId.success) return { error: "Geçersiz ilan ID." };
+  const rawAmount = formData.get("amount") as string | null;
+  const rawDays = formData.get("estimatedDays") as string | null;
+
+  const parsed = createBidSchema.safeParse({
+    jobId,
+    amount: rawAmount ? parseFloat(rawAmount) : 0,
+    estimatedDays: rawDays ? parseInt(rawDays, 10) : 0,
+    coverLetter: formData.get("coverLetter"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Geçersiz veri." };
+  }
 
   const supabase = await createClient();
 
-  const rawAmount = formData.get("amount") as string | null;
-  const rawDays = formData.get("estimatedDays") as string | null;
-  const rawCover = formData.get("coverLetter") as string | null;
-
   try {
     const { error } = await supabase.rpc("create_bid", {
-      p_job_id: parsedJobId.data,
-      p_amount: rawAmount ? parseFloat(rawAmount) : 0,
-      p_estimated_days: rawDays ? parseInt(rawDays, 10) : 0,
-      p_cover_letter: rawCover ?? "",
+      p_job_id: parsed.data.jobId,
+      p_amount: parsed.data.amount,
+      p_estimated_days: parsed.data.estimatedDays,
+      p_cover_letter: parsed.data.coverLetter,
     });
 
     if (error) {
@@ -63,7 +76,7 @@ export async function createBid(
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
   }
 
-  revalidatePath(`/jobs/${parsedJobId.data}`);
+  revalidatePath(`/jobs/${parsed.data.jobId}`);
   revalidatePath("/jobs");
   return { error: null };
 }

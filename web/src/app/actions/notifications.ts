@@ -2,11 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { uuidSchema } from "@/lib/schemas";
 import type { ActionResult } from "../actions";
 
 export async function markAsRead(
   notificationId: string
 ): Promise<ActionResult> {
+  const parsed = uuidSchema.safeParse(notificationId);
+  if (!parsed.success) {
+    return { error: "Geçersiz bildirim ID." };
+  }
+
   const supabase = await createClient();
 
   const {
@@ -21,7 +27,7 @@ export async function markAsRead(
   const { error } = await supabase
     .from("notifications")
     .update({ is_read: true })
-    .eq("id", notificationId)
+    .eq("id", parsed.data)
     .eq("user_id", user.id);
 
   if (error) {

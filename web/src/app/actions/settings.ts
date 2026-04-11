@@ -1,29 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-
-const updateProfileSchema = z.object({
-  displayName: z
-    .string()
-    .trim()
-    .min(2, "Görünen ad en az 2 karakter olmalıdır.")
-    .max(50, "Görünen ad en fazla 50 karakter olabilir."),
-  bio: z
-    .string()
-    .trim()
-    .max(300, "Biyografi en fazla 300 karakter olabilir.")
-    .optional()
-    .transform((val) => val || null),
-  newPassword: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val.length >= 8,
-      "Şifre en az 8 karakter olmalıdır."
-    ),
-});
+import { updateProfileSchema } from "@/lib/schemas";
 
 export type SettingsResult = {
   error: string | null;
@@ -33,14 +12,25 @@ export type SettingsResult = {
 export async function updateProfileSettings(
   formData: FormData
 ): Promise<SettingsResult> {
+  const rawPassword = formData.get("newPassword");
   const parsed = updateProfileSchema.safeParse({
     displayName: formData.get("displayName"),
-    bio: formData.get("bio"),
-    newPassword: formData.get("newPassword") || undefined,
+    bio: formData.get("bio") || null,
+    avatarUrl: null,
+    coverUrl: null,
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message, success: null };
+    return { error: parsed.error.issues[0]?.message ?? "Geçersiz veri.", success: null };
+  }
+
+  // Şifre ayrıca kontrol edilir (updateProfileSchema'da yok, opsiyonel alan)
+  const newPassword = typeof rawPassword === "string" && rawPassword.length > 0
+    ? rawPassword
+    : undefined;
+
+  if (newPassword && newPassword.length < 8) {
+    return { error: "Şifre en az 8 karakter olmalıdır.", success: null };
   }
 
   const supabase = await createClient();
@@ -73,9 +63,9 @@ export async function updateProfileSettings(
     }
 
     // Şifre değişikliği varsa uygula
-    if (parsed.data.newPassword) {
+    if (newPassword) {
       const { error: passwordError } = await supabase.auth.updateUser({
-        password: parsed.data.newPassword,
+        password: newPassword,
       });
 
       if (passwordError) {
@@ -105,7 +95,7 @@ export async function updateProfileSettings(
     };
   }
 
-  const successMsg = parsed.data.newPassword
+  const successMsg = newPassword
     ? "Profil ve şifre başarıyla güncellendi."
     : "Profil başarıyla güncellendi.";
 

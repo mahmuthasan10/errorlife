@@ -2,9 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { uuidSchema, addCommentSchema } from "@/lib/schemas";
 import type { ActionResult } from "../actions";
 
 export async function toggleLike(postId: string): Promise<ActionResult> {
+  const parsed = uuidSchema.safeParse(postId);
+  if (!parsed.success) {
+    return { error: "Geçersiz gönderi ID." };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -20,7 +26,7 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
     // Atomic toggle: önce INSERT dene, unique_violation → zaten var → DELETE
     const { error: insertError } = await supabase
       .from("likes")
-      .insert({ user_id: user.id, post_id: postId });
+      .insert({ user_id: user.id, post_id: parsed.data });
 
     if (insertError) {
       if (insertError.code === "23505") {
@@ -29,7 +35,7 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
           .from("likes")
           .delete()
           .eq("user_id", user.id)
-          .eq("post_id", postId);
+          .eq("post_id", parsed.data);
 
         if (delError) {
           return { error: `Beğeni kaldırılamadı: ${delError.message}` };
@@ -43,11 +49,16 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
   }
 
   revalidatePath("/");
-  revalidatePath(`/post/${postId}`);
+  revalidatePath(`/post/${parsed.data}`);
   return { error: null };
 }
 
 export async function toggleBookmark(postId: string): Promise<ActionResult> {
+  const parsed = uuidSchema.safeParse(postId);
+  if (!parsed.success) {
+    return { error: "Geçersiz gönderi ID." };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -63,7 +74,7 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
     // Atomic toggle: önce INSERT dene, unique_violation → zaten var → DELETE
     const { error: insertError } = await supabase
       .from("bookmarks")
-      .insert({ user_id: user.id, post_id: postId });
+      .insert({ user_id: user.id, post_id: parsed.data });
 
     if (insertError) {
       if (insertError.code === "23505") {
@@ -72,7 +83,7 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
           .from("bookmarks")
           .delete()
           .eq("user_id", user.id)
-          .eq("post_id", postId);
+          .eq("post_id", parsed.data);
 
         if (delError) {
           return { error: `Yer imi kaldırılamadı: ${delError.message}` };
@@ -86,7 +97,7 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
   }
 
   revalidatePath("/");
-  revalidatePath(`/post/${postId}`);
+  revalidatePath(`/post/${parsed.data}`);
   return { error: null };
 }
 
@@ -94,17 +105,12 @@ export async function addComment(
   postId: string,
   content: string
 ): Promise<ActionResult> {
+  const parsed = addCommentSchema.safeParse({ postId, content });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Geçersiz veri." };
+  }
+
   const supabase = await createClient();
-
-  const trimmed = content?.trim();
-
-  if (!trimmed) {
-    return { error: "Yorum içeriği boş olamaz." };
-  }
-
-  if (trimmed.length > 500) {
-    return { error: "Yorum en fazla 500 karakter olabilir." };
-  }
 
   try {
     const {
@@ -118,7 +124,11 @@ export async function addComment(
 
     const { error } = await supabase
       .from("comments")
-      .insert({ user_id: user.id, post_id: postId, content: trimmed });
+      .insert({
+        user_id: user.id,
+        post_id: parsed.data.postId,
+        content: parsed.data.content.trim(),
+      });
 
     if (error) {
       return { error: `Yorum eklenemedi: ${error.message}` };
@@ -128,7 +138,7 @@ export async function addComment(
   }
 
   revalidatePath("/");
-  revalidatePath(`/post/${postId}`);
+  revalidatePath(`/post/${parsed.data.postId}`);
   return { error: null };
 }
 
@@ -136,6 +146,12 @@ export async function deleteComment(
   commentId: string,
   postId: string
 ): Promise<ActionResult> {
+  const commentParsed = uuidSchema.safeParse(commentId);
+  const postParsed = uuidSchema.safeParse(postId);
+  if (!commentParsed.success || !postParsed.success) {
+    return { error: "Geçersiz ID." };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -151,7 +167,7 @@ export async function deleteComment(
     const { error } = await supabase
       .from("comments")
       .delete()
-      .eq("id", commentId)
+      .eq("id", commentParsed.data)
       .eq("user_id", user.id);
 
     if (error) {
@@ -162,6 +178,6 @@ export async function deleteComment(
   }
 
   revalidatePath("/");
-  revalidatePath(`/post/${postId}`);
+  revalidatePath(`/post/${postParsed.data}`);
   return { error: null };
 }

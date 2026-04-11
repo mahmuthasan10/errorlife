@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import type { NotificationWithActor, Profile } from "@/types/database";
+import type { NotificationWithActor, NotificationType, Profile } from "@/types/database";
 
 const NOTIFICATIONS_LIMIT = 20;
 
@@ -39,7 +39,7 @@ export async function getUserNotifications(): Promise<NotificationWithActor[]> {
     id: item.id,
     user_id: item.user_id,
     actor_id: item.actor_id,
-    type: item.type,
+    type: item.type as NotificationType,
     entity_id: item.entity_id,
     is_read: item.is_read,
     created_at: item.created_at,

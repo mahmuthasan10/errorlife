@@ -5,10 +5,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { slugify } from "@/lib/utils";
+import { uuidSchema, LIMITS } from "@/lib/schemas";
 
 export type ActionResult = {
   error: string | null;
 };
+
+const tagsArraySchema = z
+  .array(z.string().min(LIMITS.post.tagName.min).max(LIMITS.post.tagName.max))
+  .max(LIMITS.post.tags.max);
 
 export async function createPost(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
@@ -17,11 +22,19 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   const tagsRaw = formData.get("tags") as string | null;
   const imageUrl = (formData.get("image_url") as string | null) || null;
 
+  if (!content) {
+    return { error: "Gönderi içeriği boş olamaz." };
+  }
+
+  if (content.length > LIMITS.post.content.max) {
+    return { error: `Gönderi en fazla ${LIMITS.post.content.max} karakter olabilir.` };
+  }
+
   let tags: string[] = [];
   if (tagsRaw) {
     try {
       const raw = JSON.parse(tagsRaw);
-      const tagsResult = z.array(z.string().min(1).max(50)).max(10).safeParse(raw);
+      const tagsResult = tagsArraySchema.safeParse(raw);
       if (!tagsResult.success) {
         return { error: "Geçersiz etiket formatı." };
       }
@@ -29,14 +42,6 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     } catch {
       return { error: "Etiketler ayrıştırılamadı." };
     }
-  }
-
-  if (!content) {
-    return { error: "Gönderi içeriği boş olamaz." };
-  }
-
-  if (content.length > 500) {
-    return { error: "Gönderi en fazla 500 karakter olabilir." };
   }
 
   try {
@@ -53,7 +58,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
 
     const { error: rpcError } = await supabase.rpc("create_post_with_tags", {
       p_content: content,
-      p_image_url: imageUrl,
+      p_image_url: imageUrl ?? undefined,
       p_tags: tagObjects,
     });
 
@@ -69,6 +74,11 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
 }
 
 export async function deletePost(postId: string): Promise<ActionResult> {
+  const parsed = uuidSchema.safeParse(postId);
+  if (!parsed.success) {
+    return { error: "Geçersiz gönderi ID." };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -84,7 +94,7 @@ export async function deletePost(postId: string): Promise<ActionResult> {
     const { error: deleteError } = await supabase
       .from("posts")
       .delete()
-      .eq("id", postId)
+      .eq("id", parsed.data)
       .eq("user_id", user.id);
 
     if (deleteError) {
