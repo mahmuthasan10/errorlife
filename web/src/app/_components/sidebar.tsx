@@ -7,22 +7,37 @@ import { logout } from "@/app/actions";
 
 interface SidebarProps {
   currentUsername: string | null;
+  unreadNotifCount: number;
+  unreadMessageCount: number;
 }
 
-const navItems = [
-  { href: "/", icon: Home, label: "Ana Sayfa" },
-  { href: "/search", icon: Search, label: "Keşfet" },
-  { href: "/jobs", icon: Briefcase, label: "İlanlar" },
-  { href: "/notifications", icon: Bell, label: "Bildirimler" },
-  { href: "/messages", icon: Mail, label: "Mesajlar" },
-];
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
-export default function Sidebar({ currentUsername }: SidebarProps) {
+export default function Sidebar({
+  currentUsername,
+  unreadNotifCount,
+  unreadMessageCount,
+}: SidebarProps) {
   const pathname = usePathname();
 
   function isActive(href: string) {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   }
+
+  const navItems = [
+    { href: "/", icon: Home, label: "Ana Sayfa", badge: 0 },
+    { href: "/search", icon: Search, label: "Keşfet", badge: 0 },
+    { href: "/jobs", icon: Briefcase, label: "İlanlar", badge: 0 },
+    { href: "/notifications", icon: Bell, label: "Bildirimler", badge: unreadNotifCount },
+    { href: "/messages", icon: Mail, label: "Mesajlar", badge: unreadMessageCount },
+  ];
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-zinc-800 px-4 py-6 md:flex">
@@ -45,7 +60,10 @@ export default function Sidebar({ currentUsername }: SidebarProps) {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            <item.icon size={22} />
+            <div className="relative">
+              <item.icon size={22} />
+              <Badge count={item.badge} />
+            </div>
             <span className="text-lg">{item.label}</span>
           </Link>
         ))}

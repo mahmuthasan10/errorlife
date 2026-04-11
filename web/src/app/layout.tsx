@@ -37,14 +37,26 @@ export default async function RootLayout({
 
   let currentUsername: string | null = null;
   let displayName: string | null = null;
+  let unreadNotifCount = 0;
+  let unreadMessageCount = 0;
+
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username, display_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    currentUsername = profile?.username ?? null;
-    displayName = profile?.display_name ?? null;
+    const [profileResult, badgeResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase.rpc("get_badge_counts"),
+    ]);
+
+    currentUsername = profileResult.data?.username ?? null;
+    displayName = profileResult.data?.display_name ?? null;
+
+    if (badgeResult.data && badgeResult.data[0]) {
+      unreadNotifCount = Number(badgeResult.data[0].notif_count ?? 0);
+      unreadMessageCount = Number(badgeResult.data[0].message_count ?? 0);
+    }
   }
 
   const isAuth = !!user;
@@ -63,12 +75,19 @@ export default async function RootLayout({
               displayName={displayName}
             />
             <div className="mx-auto flex min-h-screen max-w-7xl">
-              <Sidebar currentUsername={currentUsername} />
+              <Sidebar
+                currentUsername={currentUsername}
+                unreadNotifCount={unreadNotifCount}
+                unreadMessageCount={unreadMessageCount}
+              />
               <main className="min-w-0 flex-1 pb-14 md:pb-0">
                 {children}
               </main>
             </div>
-            <BottomNav />
+            <BottomNav
+              unreadNotifCount={unreadNotifCount}
+              unreadMessageCount={unreadMessageCount}
+            />
           </>
         ) : (
           children
