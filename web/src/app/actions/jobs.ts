@@ -1,9 +1,12 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { uuidSchema, createJobSchema, createBidSchema } from "@/lib/schemas";
 import type { ActionResult } from "../actions";
+
+const statusSchema = z.enum(["open", "in_progress", "closed"]);
 
 // ── createJob ─────────────────────────────────────────────────
 export async function createJob(formData: FormData): Promise<ActionResult> {
@@ -22,6 +25,15 @@ export async function createJob(formData: FormData): Promise<ActionResult> {
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
+
   try {
     const { error } = await supabase.rpc("create_job", {
       p_title: parsed.data.title,
@@ -30,7 +42,7 @@ export async function createJob(formData: FormData): Promise<ActionResult> {
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: "İlan oluşturulamadı. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -61,6 +73,15 @@ export async function createBid(
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
+
   try {
     const { error } = await supabase.rpc("create_bid", {
       p_job_id: parsed.data.jobId,
@@ -70,7 +91,7 @@ export async function createBid(
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: "Teklif gönderilemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -93,6 +114,15 @@ export async function acceptBid(
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
+
   try {
     const { error } = await supabase.rpc("accept_bid", {
       p_bid_id: parsedBidId.data,
@@ -100,7 +130,7 @@ export async function acceptBid(
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: "Teklif kabul edilemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -123,6 +153,15 @@ export async function rejectBid(
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
+
   try {
     const { error } = await supabase.rpc("reject_bid", {
       p_bid_id: parsedBidId.data,
@@ -130,7 +169,7 @@ export async function rejectBid(
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: "Teklif reddedilemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -165,7 +204,7 @@ export async function deleteJob(jobId: string): Promise<ActionResult> {
       .eq("user_id", user.id);
 
     if (error) {
-      return { error: `İlan silinemedi: ${error.message}` };
+      return { error: "İlan silinemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -183,16 +222,28 @@ export async function updateJobStatus(
   const parsedJobId = uuidSchema.safeParse(jobId);
   if (!parsedJobId.success) return { error: "Geçersiz ilan ID." };
 
+  const parsedStatus = statusSchema.safeParse(status);
+  if (!parsedStatus.success) return { error: "Geçersiz durum değeri." };
+
   const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Bu işlem için giriş yapmalısınız." };
+  }
 
   try {
     const { error } = await supabase.rpc("update_job_status", {
       p_job_id: parsedJobId.data,
-      p_status: status,
+      p_status: parsedStatus.data,
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: "Durum güncellenemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };

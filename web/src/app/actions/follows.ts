@@ -47,7 +47,7 @@ export async function toggleFollowUser(
         .eq("following_id", parsed.data.targetUserId);
 
       if (error) {
-        return { error: `Takipten çıkılamadı: ${error.message}` };
+        return { error: "Takipten çıkılamadı. Lütfen tekrar deneyin." };
       }
     } else {
       // Takip et — 23505 (unique_violation) idempotent: zaten takip ediliyorsa sessizce geç
@@ -59,7 +59,7 @@ export async function toggleFollowUser(
         });
 
       if (error && error.code !== "23505") {
-        return { error: `Takip edilemedi: ${error.message}` };
+        return { error: "Takip edilemedi. Lütfen tekrar deneyin." };
       }
     }
   } catch {

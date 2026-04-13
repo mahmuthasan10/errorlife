@@ -15,6 +15,21 @@ export async function startChat(
   if (!parsed.success) {
     return { chatId: null, error: "Geçersiz kullanıcı kimliği." };
   }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { chatId: null, error: "Mesaj göndermek için giriş yapmalısınız." };
+  }
+
+  if (user.id === parsed.data) {
+    return { chatId: null, error: "Kendinize mesaj gönderemezsiniz." };
+  }
+
   return getOrCreateChat(parsed.data);
 }
 

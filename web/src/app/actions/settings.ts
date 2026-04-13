@@ -57,7 +57,7 @@ export async function updateProfileSettings(
 
     if (profileError) {
       return {
-        error: `Profil güncellenemedi: ${profileError.message}`,
+        error: "Profil güncellenemedi. Lütfen tekrar deneyin.",
         success: null,
       };
     }
@@ -70,7 +70,7 @@ export async function updateProfileSettings(
 
       if (passwordError) {
         return {
-          error: `Şifre güncellenemedi: ${passwordError.message}`,
+          error: "Şifre güncellenemedi. Lütfen tekrar deneyin.",
           success: null,
         };
       }
