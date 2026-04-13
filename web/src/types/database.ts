@@ -569,6 +569,53 @@ export type Database = {
         Args: { p_content: string; p_image_url?: string; p_tags?: Json }
         Returns: string
       }
+      get_badge_counts: {
+        Args: never
+        Returns: {
+          message_count: number
+          notif_count: number
+        }[]
+      }
+      get_follow_notifications: {
+        Args: never
+        Returns: {
+          actor_avatar_url: string
+          actor_display_name: string
+          actor_id: string
+          actor_username: string
+          created_at: string
+          is_read: boolean
+          notification_id: string
+        }[]
+      }
+      get_interaction_notifications: {
+        Args: never
+        Returns: {
+          actor_count: number
+          is_read: boolean
+          kind: string
+          latest_actor_avatar_url: string
+          latest_actor_display_name: string
+          latest_actor_id: string
+          latest_actor_username: string
+          latest_at: string
+          notification_id: string
+          post_id: string
+        }[]
+      }
+      get_message_notifications: {
+        Args: never
+        Returns: {
+          chat_id: string
+          last_message_at: string
+          last_message_content: string
+          other_user_avatar_url: string
+          other_user_display_name: string
+          other_user_id: string
+          other_user_username: string
+          unread_count: number
+        }[]
+      }
       get_trending_tags: {
         Args: { p_limit?: number }
         Returns: {
@@ -577,6 +624,10 @@ export type Database = {
           post_count: number
           slug: string
         }[]
+      }
+      mark_like_notifications_read: {
+        Args: { p_post_id: string }
+        Returns: undefined
       }
       reject_bid: {
         Args: { p_bid_id: string; p_job_id: string }

@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 
 export type AuthResult = {
@@ -7,33 +8,41 @@ export type AuthResult = {
   success: string | null;
 };
 
+const registerSchema = z.object({
+  email: z.string().email("Geçerli bir e-posta adresi girin."),
+  password: z.string().min(8, "Şifre en az 8 karakter olmalıdır."),
+  username: z
+    .string()
+    .min(3, "Kullanıcı adı en az 3 karakter olmalıdır.")
+    .max(30, "Kullanıcı adı en fazla 30 karakter olabilir.")
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir."
+    ),
+  displayName: z
+    .string()
+    .min(1, "İsim alanı zorunludur.")
+    .max(50, "İsim en fazla 50 karakter olabilir."),
+});
+
 export async function register(formData: FormData): Promise<AuthResult> {
-  const supabase = await createClient();
+  const parsed = registerSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    username: formData.get("username"),
+    displayName: formData.get("displayName"),
+  });
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const username = formData.get("username") as string;
-  const displayName = formData.get("displayName") as string;
-
-  if (!email || !password || !username || !displayName) {
-    return { error: "Tüm alanları doldurun.", success: null };
-  }
-
-  if (password.length < 6) {
-    return { error: "Şifre en az 6 karakter olmalıdır.", success: null };
-  }
-
-  if (username.length < 3) {
-    return { error: "Kullanıcı adı en az 3 karakter olmalıdır.", success: null };
-  }
-
-  const usernameRegex = /^[a-zA-Z0-9_]+$/;
-  if (!usernameRegex.test(username)) {
+  if (!parsed.success) {
     return {
-      error: "Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.",
+      error: parsed.error.issues[0]?.message ?? "Geçersiz form verisi.",
       success: null,
     };
   }
+
+  const { email, password, username, displayName } = parsed.data;
+
+  const supabase = await createClient();
 
   try {
     const { error } = await supabase.auth.signUp({
@@ -51,7 +60,7 @@ export async function register(formData: FormData): Promise<AuthResult> {
       if (error.message.includes("already registered")) {
         return { error: "Bu e-posta adresi zaten kayıtlı.", success: null };
       }
-      return { error: `Kayıt başarısız: ${error.message}`, success: null };
+      return { error: "Kayıt başarısız. Lütfen tekrar deneyin.", success: null };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.", success: null };

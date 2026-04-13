@@ -63,7 +63,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     });
 
     if (rpcError) {
-      return { error: `Gönderi paylaşılamadı: ${rpcError.message}` };
+      return { error: "Gönderi paylaşılamadı. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -98,7 +98,7 @@ export async function deletePost(postId: string): Promise<ActionResult> {
       .eq("user_id", user.id);
 
     if (deleteError) {
-      return { error: `Gönderi silinemedi: ${deleteError.message}` };
+      return { error: "Gönderi silinemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
