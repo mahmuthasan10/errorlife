@@ -38,10 +38,10 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
           .eq("post_id", parsed.data);
 
         if (delError) {
-          return { error: `Beğeni kaldırılamadı: ${delError.message}` };
+          return { error: "Beğeni kaldırılamadı. Lütfen tekrar deneyin." };
         }
       } else {
-        return { error: `Beğeni eklenemedi: ${insertError.message}` };
+        return { error: "Beğeni eklenemedi. Lütfen tekrar deneyin." };
       }
     }
   } catch {
@@ -86,10 +86,10 @@ export async function toggleBookmark(postId: string): Promise<ActionResult> {
           .eq("post_id", parsed.data);
 
         if (delError) {
-          return { error: `Yer imi kaldırılamadı: ${delError.message}` };
+          return { error: "Yer imi kaldırılamadı. Lütfen tekrar deneyin." };
         }
       } else {
-        return { error: `Yer imi eklenemedi: ${insertError.message}` };
+        return { error: "Yer imi eklenemedi. Lütfen tekrar deneyin." };
       }
     }
   } catch {
@@ -131,7 +131,7 @@ export async function addComment(
       });
 
     if (error) {
-      return { error: `Yorum eklenemedi: ${error.message}` };
+      return { error: "Yorum eklenemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };
@@ -171,7 +171,7 @@ export async function deleteComment(
       .eq("user_id", user.id);
 
     if (error) {
-      return { error: `Yorum silinemedi: ${error.message}` };
+      return { error: "Yorum silinemedi. Lütfen tekrar deneyin." };
     }
   } catch {
     return { error: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." };

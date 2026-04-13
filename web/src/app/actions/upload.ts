@@ -89,7 +89,7 @@ export async function uploadAvatar(formData: FormData): Promise<SettingsResult> 
       .upload(path, arrayBuffer, { contentType: file.type, upsert: false });
 
     if (uploadError) {
-      return { error: `Yükleme başarısız: ${uploadError.message}`, success: null };
+      return { error: "Yükleme başarısız. Lütfen tekrar deneyin.", success: null };
     }
 
     // Public URL al
@@ -105,7 +105,7 @@ export async function uploadAvatar(formData: FormData): Promise<SettingsResult> 
     if (updateError) {
       // Yüklenen dosyayı temizle
       await deleteOldFile(supabase, path);
-      return { error: `Profil güncellenemedi: ${updateError.message}`, success: null };
+      return { error: "Profil güncellenemedi. Lütfen tekrar deneyin.", success: null };
     }
 
     // Eski dosyayı sil (URL'den path çıkar)
@@ -166,7 +166,7 @@ export async function uploadPostImage(
       .upload(path, arrayBuffer, { contentType: file.type, upsert: false });
 
     if (uploadError) {
-      return { error: `Yükleme başarısız: ${uploadError.message}`, url: null };
+      return { error: "Yükleme başarısız. Lütfen tekrar deneyin.", url: null };
     }
 
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -215,7 +215,7 @@ export async function uploadCover(formData: FormData): Promise<SettingsResult> {
       .upload(path, arrayBuffer, { contentType: file.type, upsert: false });
 
     if (uploadError) {
-      return { error: `Yükleme başarısız: ${uploadError.message}`, success: null };
+      return { error: "Yükleme başarısız. Lütfen tekrar deneyin.", success: null };
     }
 
     // Public URL al
@@ -230,7 +230,7 @@ export async function uploadCover(formData: FormData): Promise<SettingsResult> {
 
     if (updateError) {
       await deleteOldFile(supabase, path);
-      return { error: `Profil güncellenemedi: ${updateError.message}`, success: null };
+      return { error: "Profil güncellenemedi. Lütfen tekrar deneyin.", success: null };
     }
 
     // Eski dosyayı sil

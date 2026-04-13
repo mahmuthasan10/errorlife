@@ -95,7 +95,7 @@ export async function optimizePostContent(
 
     return {
       data: null,
-      error: `AI servisi şu anda yanıt veremiyor: ${message}`,
+      error: "AI servisi şu anda yanıt veremiyor. Lütfen tekrar deneyin.",
     };
   }
 }
