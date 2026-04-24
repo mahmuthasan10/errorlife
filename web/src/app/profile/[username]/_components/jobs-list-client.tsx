@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Briefcase, Clock, DollarSign, Loader2 } from "lucide-react";
 import { loadMoreUserJobs } from "@/app/actions/pagination";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import type { JobWithAuthor } from "@/types/database";
 
 const PAGE_SIZE = 20;
@@ -96,17 +97,22 @@ export default function JobsListClient({
 }) {
   const [jobs, setJobs] = useState(initialJobs);
   const [hasMore, setHasMore] = useState(initialJobs.length === PAGE_SIZE);
+  const [loadError, setLoadError] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function loadMore() {
     const cursor = jobs[jobs.length - 1]?.created_at;
     if (!cursor || isPending) return;
     startTransition(async () => {
-      const more = await loadMoreUserJobs(userId, cursor);
+      const { data: more, fetchError } = await loadMoreUserJobs(userId, cursor);
+      if (fetchError) { setLoadError(true); return; }
+      setLoadError(false);
       if (more.length > 0) setJobs((prev) => [...prev, ...more]);
       setHasMore(more.length === PAGE_SIZE);
     });
   }
+
+  const sentinelRef = useInfiniteScroll(loadMore, hasMore && !loadError);
 
   if (jobs.length === 0) {
     return (
@@ -125,24 +131,17 @@ export default function JobsListClient({
         ))}
       </div>
 
-      {hasMore && (
-        <div className="py-6 text-center">
-          <button
-            onClick={loadMore}
-            disabled={isPending}
-            className="rounded-full border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isPending ? (
-              <span className="flex items-center gap-2">
-                <Loader2 size={14} className="animate-spin" />
-                Yükleniyor...
-              </span>
-            ) : (
-              "Daha Fazla Yükle"
-            )}
+      {loadError ? (
+        <div className="py-4 text-center">
+          <button onClick={loadMore} className="text-sm text-zinc-500 underline hover:text-zinc-300">
+            Yükleme başarısız. Tekrar dene
           </button>
         </div>
-      )}
+      ) : hasMore ? (
+        <div ref={sentinelRef} className="py-6 text-center text-zinc-500">
+          {isPending && <Loader2 size={20} className="mx-auto animate-spin" />}
+        </div>
+      ) : null}
     </div>
   );
 }

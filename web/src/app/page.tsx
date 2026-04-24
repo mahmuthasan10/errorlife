@@ -5,9 +5,10 @@ import type { PostWithAuthor } from "@/types/database";
 import { getTrendingTags } from "@/lib/tag-queries";
 import CreatePostForm from "./_components/create-post-form";
 import RealtimeFeed from "./_components/realtime-feed";
+import FetchError from "./_components/fetch-error";
 import { PostFeedProvider } from "./_components/post-feed-context";
 
-async function getPosts(): Promise<PostWithAuthor[]> {
+async function getPosts(): Promise<{ posts: PostWithAuthor[]; fetchError: boolean }> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -22,11 +23,8 @@ async function getPosts(): Promise<PostWithAuthor[]> {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  if (error) {
-    return [];
-  }
-
-  return (data as PostWithAuthor[]) ?? [];
+  if (error) return { posts: [], fetchError: true };
+  return { posts: (data as PostWithAuthor[]) ?? [], fetchError: false };
 }
 
 async function getCurrentUser() {
@@ -54,7 +52,7 @@ async function getUserInteractions(userId: string) {
 }
 
 export default async function HomePage() {
-  const [posts, currentUser, trendingTags] = await Promise.all([
+  const [{ posts, fetchError }, currentUser, trendingTags] = await Promise.all([
     getPosts(),
     getCurrentUser(),
     getTrendingTags(5),
@@ -82,12 +80,16 @@ export default async function HomePage() {
           </div>
 
           {/* Gönderi listesi — Realtime */}
-          <RealtimeFeed
-            initialPosts={posts}
-            currentUserId={currentUserId}
-            likedPostIds={Array.from(likedPostIds)}
-            bookmarkedPostIds={Array.from(bookmarkedPostIds)}
-          />
+          {fetchError ? (
+            <FetchError message="Gönderiler yüklenemedi." />
+          ) : (
+            <RealtimeFeed
+              initialPosts={posts}
+              currentUserId={currentUserId}
+              likedPostIds={Array.from(likedPostIds)}
+              bookmarkedPostIds={Array.from(bookmarkedPostIds)}
+            />
+          )}
         </PostFeedProvider>
       </main>
 

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { loadMoreFeedPosts } from "@/app/actions/pagination";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import type { PostWithAuthor } from "@/types/database";
 import DeletePostButton from "./delete-post-button";
+import EditPostButton from "./edit-post-button";
 import { usePostFeed } from "./post-feed-context";
 
 const PAGE_SIZE = 20;
@@ -14,6 +16,7 @@ import {
   LikeButton,
   BookmarkButton,
   CommentButton,
+  ShareButton,
 } from "./interaction-buttons";
 import ClickGuard from "./click-guard";
 
@@ -47,6 +50,7 @@ export default function RealtimeFeed({
   const { isPendingPost, pendingContent } = usePostFeed();
   const [posts, setPosts] = useState<PostWithAuthor[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
+  const [loadError, setLoadError] = useState(false);
   const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set(likedPostIds));
   const [bookmarkedSet, setBookmarkedSet] = useState<Set<string>>(() => new Set(bookmarkedPostIds));
   const [isLoadingMore, startLoadMore] = useTransition();
@@ -198,11 +202,15 @@ export default function RealtimeFeed({
     const cursor = posts[posts.length - 1]?.created_at;
     if (!cursor || isLoadingMore) return;
     startLoadMore(async () => {
-      const more = await loadMoreFeedPosts(cursor);
+      const { data: more, fetchError } = await loadMoreFeedPosts(cursor);
+      if (fetchError) { setLoadError(true); return; }
+      setLoadError(false);
       if (more.length > 0) setPosts((prev) => [...prev, ...more]);
       setHasMore(more.length === PAGE_SIZE);
     });
   }
+
+  const sentinelRef = useInfiniteScroll(handleLoadMore, hasMore && !loadError);
 
   if (posts.length === 0 && !isPendingPost) {
     return (
@@ -240,27 +248,36 @@ export default function RealtimeFeed({
           isOwner={currentUserId === post.user_id}
           isLiked={likedSet.has(post.id)}
           isBookmarked={bookmarkedSet.has(post.id)}
+          onEditSuccess={(newContent, newTags) =>
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.id === post.id
+                  ? {
+                      ...p,
+                      content: newContent,
+                      post_tags: newTags.map((t) => ({ tags: t })),
+                    }
+                  : p
+              )
+            )
+          }
         />
       ))}
 
-      {hasMore && (
-        <div className="py-6 text-center">
+      {loadError ? (
+        <div className="py-4 text-center">
           <button
             onClick={handleLoadMore}
-            disabled={isLoadingMore}
-            className="rounded-full border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-sm text-zinc-500 underline hover:text-zinc-300"
           >
-            {isLoadingMore ? (
-              <span className="flex items-center gap-2">
-                <Loader2 size={14} className="animate-spin" />
-                Yükleniyor...
-              </span>
-            ) : (
-              "Daha Fazla Yükle"
-            )}
+            Yükleme başarısız. Tekrar dene
           </button>
         </div>
-      )}
+      ) : hasMore ? (
+        <div ref={sentinelRef} className="py-6 text-center text-zinc-500">
+          {isLoadingMore && <Loader2 size={20} className="mx-auto animate-spin" />}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -270,11 +287,13 @@ function PostCard({
   isOwner,
   isLiked,
   isBookmarked,
+  onEditSuccess,
 }: {
   post: PostWithAuthor;
   isOwner: boolean;
   isLiked: boolean;
   isBookmarked: boolean;
+  onEditSuccess?: (newContent: string, newTags: { id: string; name: string; slug: string; created_at: string }[]) => void;
 }) {
   return (
     <article className="relative border-b border-zinc-800 px-4 py-3 transition-colors hover:bg-zinc-900/50">
@@ -333,7 +352,13 @@ function PostCard({
               {formatRelativeTime(post.created_at)}
             </span>
             {isOwner && (
-              <ClickGuard as="span">
+              <ClickGuard as="span" className="ml-auto flex items-center gap-2">
+                <EditPostButton
+                  postId={post.id}
+                  initialContent={post.content}
+                  initialTags={post.post_tags.map((pt) => pt.tags)}
+                  onSuccess={onEditSuccess}
+                />
                 <DeletePostButton postId={post.id} />
               </ClickGuard>
             )}
@@ -383,6 +408,7 @@ function PostCard({
               initialActive={isBookmarked}
               initialCount={post.bookmark_count}
             />
+            <ShareButton postId={post.id} />
           </ClickGuard>
         </div>
       </div>

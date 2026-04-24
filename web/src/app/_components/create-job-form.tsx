@@ -3,27 +3,37 @@
 import { useState, useRef } from "react";
 import { Briefcase, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { createJob } from "@/app/actions/jobs";
+import { useJobFeed } from "@/app/jobs/_components/job-feed-context";
 
 export default function CreateJobForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const { setPendingJob, clearPendingJob } = useJobFeed();
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     setLoading(true);
 
+    const title = (formData.get("title") as string) ?? "";
+    setPendingJob(title);
+
     try {
       const result = await createJob(formData);
       if (result.error) {
+        clearPendingJob();
         setError(result.error);
       } else {
         formRef.current?.reset();
         setIsOpen(false);
         setError(null);
+        // Context'i temizleme: revalidatePath sonrası yeni veri gelince otomatik kaybolacak
+        // Küçük bir gecikme ile kaldır — liste yenilenmeden önce skeleton görünsün
+        setTimeout(() => clearPendingJob(), 1500);
       }
     } catch {
+      clearPendingJob();
       setError("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
     } finally {
       setLoading(false);

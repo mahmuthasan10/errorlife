@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, Bookmark, Loader2 } from "lucide-react";
 import { loadMoreUserLikes } from "@/app/actions/pagination";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import type { PostWithAuthor } from "@/types/database";
 
 function formatRelativeTime(dateStr: string): string {
@@ -97,18 +98,21 @@ export default function LikesListClient({
 }) {
   const [posts, setPosts] = useState(initialPosts);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
+  const [loadError, setLoadError] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function loadMore() {
     if (!cursor || isPending) return;
     startTransition(async () => {
-      const result = await loadMoreUserLikes(userId, cursor);
-      if (result.posts.length > 0) {
-        setPosts((prev) => [...prev, ...result.posts]);
-      }
-      setCursor(result.nextCursor);
+      const { posts: more, nextCursor, fetchError } = await loadMoreUserLikes(userId, cursor);
+      if (fetchError) { setLoadError(true); return; }
+      setLoadError(false);
+      if (more.length > 0) setPosts((prev) => [...prev, ...more]);
+      setCursor(nextCursor);
     });
   }
+
+  const sentinelRef = useInfiniteScroll(loadMore, !!cursor && !loadError);
 
   if (posts.length === 0) {
     return (
@@ -127,24 +131,17 @@ export default function LikesListClient({
         ))}
       </div>
 
-      {cursor && (
-        <div className="py-6 text-center">
-          <button
-            onClick={loadMore}
-            disabled={isPending}
-            className="rounded-full border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isPending ? (
-              <span className="flex items-center gap-2">
-                <Loader2 size={14} className="animate-spin" />
-                Yükleniyor...
-              </span>
-            ) : (
-              "Daha Fazla Yükle"
-            )}
+      {loadError ? (
+        <div className="py-4 text-center">
+          <button onClick={loadMore} className="text-sm text-zinc-500 underline hover:text-zinc-300">
+            Yükleme başarısız. Tekrar dene
           </button>
         </div>
-      )}
+      ) : cursor ? (
+        <div ref={sentinelRef} className="py-6 text-center text-zinc-500">
+          {isPending && <Loader2 size={20} className="mx-auto animate-spin" />}
+        </div>
+      ) : null}
     </div>
   );
 }

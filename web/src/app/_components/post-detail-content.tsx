@@ -4,8 +4,9 @@ import type {
   PostWithAuthor,
   CommentWithAuthor,
 } from "@/types/database";
-import { LikeButton, BookmarkButton } from "./interaction-buttons";
+import { LikeButton, BookmarkButton, ShareButton } from "./interaction-buttons";
 import CommentSection from "./comment-form";
+import PostOwnerActions from "./post-owner-actions";
 
 function formatFullDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -77,6 +78,13 @@ export default function PostDetailContent({
               </Link>
             </p>
           </div>
+          {currentUserId === post.user_id && (
+            <PostOwnerActions
+              postId={post.id}
+              initialContent={post.content}
+              initialTags={post.post_tags.map((pt) => pt.tags)}
+            />
+          )}
         </div>
 
         <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
@@ -142,6 +150,7 @@ export default function PostDetailContent({
           initialActive={isBookmarked}
           initialCount={post.bookmark_count}
         />
+        <ShareButton postId={post.id} />
       </div>
 
       {/* Yorum bölümü */}

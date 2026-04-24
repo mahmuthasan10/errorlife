@@ -2,12 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Bookmark, FileText, Loader2 } from "lucide-react";
-import { loadMoreUserPosts } from "@/app/actions/pagination";
+import { Heart, MessageCircle, Bookmark, Loader2 } from "lucide-react";
+import { loadMoreBookmarks } from "@/app/actions/pagination";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import type { PostWithAuthor } from "@/types/database";
-
-const PAGE_SIZE = 20;
 
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();
@@ -23,26 +21,21 @@ function formatRelativeTime(dateStr: string): string {
   return `${diffDays}g`;
 }
 
-function PostRow({ post }: { post: PostWithAuthor }) {
+function BookmarkedPostRow({ post }: { post: PostWithAuthor }) {
   return (
     <Link
       href={`/post/${post.id}`}
       className="flex gap-3 px-4 py-4 transition-colors hover:bg-zinc-950/50"
     >
-      {post.profiles.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={post.profiles.avatar_url}
-          alt={post.profiles.display_name}
-          className="h-10 w-10 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
-          <span className="text-sm font-bold text-zinc-300">
-            {post.profiles.display_name.charAt(0).toUpperCase()}
-          </span>
-        </div>
-      )}
+      <Link
+        href={`/profile/${post.profiles.username}`}
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 transition-opacity hover:opacity-80"
+      >
+        <span className="text-sm font-bold text-zinc-300">
+          {post.profiles.display_name.charAt(0).toUpperCase()}
+        </span>
+      </Link>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm">
@@ -58,18 +51,9 @@ function PostRow({ post }: { post: PostWithAuthor }) {
           </span>
         </div>
 
-        <p className="mt-1 line-clamp-4 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
+        <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
           {post.content}
         </p>
-
-        {post.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.image_url}
-            alt="Gönderi görseli"
-            className="mt-2 max-h-72 w-full rounded-xl object-cover"
-          />
-        )}
 
         {post.post_tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -93,8 +77,8 @@ function PostRow({ post }: { post: PostWithAuthor }) {
             <MessageCircle size={14} />
             {post.comment_count}
           </span>
-          <span className="flex items-center gap-1">
-            <Bookmark size={14} />
+          <span className="flex items-center gap-1 text-green-400">
+            <Bookmark size={14} className="fill-green-400" />
             {post.bookmark_count}
           </span>
         </div>
@@ -103,37 +87,42 @@ function PostRow({ post }: { post: PostWithAuthor }) {
   );
 }
 
-export default function PostsListClient({
+export default function BookmarksListClient({
   initialPosts,
-  userId,
+  initialCursor,
 }: {
   initialPosts: PostWithAuthor[];
-  userId: string;
+  initialCursor: string | null;
 }) {
   const [posts, setPosts] = useState(initialPosts);
-  const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [loadError, setLoadError] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function loadMore() {
-    const cursor = posts[posts.length - 1]?.created_at;
     if (!cursor || isPending) return;
     startTransition(async () => {
-      const { data: more, fetchError } = await loadMoreUserPosts(userId, cursor);
-      if (fetchError) { setLoadError(true); return; }
+      const { posts: more, nextCursor, fetchError } = await loadMoreBookmarks(cursor);
+      if (fetchError) {
+        setLoadError(true);
+        return;
+      }
       setLoadError(false);
       if (more.length > 0) setPosts((prev) => [...prev, ...more]);
-      setHasMore(more.length === PAGE_SIZE);
+      setCursor(nextCursor);
     });
   }
 
-  const sentinelRef = useInfiniteScroll(loadMore, hasMore && !loadError);
+  const sentinelRef = useInfiniteScroll(loadMore, !!cursor && !loadError);
 
   if (posts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-zinc-500">
-        <FileText size={48} strokeWidth={1.5} />
-        <p className="text-lg">Henüz gönderi paylaşılmadı.</p>
+        <Bookmark size={48} strokeWidth={1.5} />
+        <p className="text-lg">Henüz kaydedilen gönderi yok.</p>
+        <p className="text-sm">
+          İlgini çeken gönderileri yer imi simgesine tıklayarak kaydedebilirsin.
+        </p>
       </div>
     );
   }
@@ -142,17 +131,20 @@ export default function PostsListClient({
     <div>
       <div className="divide-y divide-zinc-800">
         {posts.map((post) => (
-          <PostRow key={post.id} post={post} />
+          <BookmarkedPostRow key={post.id} post={post} />
         ))}
       </div>
 
       {loadError ? (
         <div className="py-4 text-center">
-          <button onClick={loadMore} className="text-sm text-zinc-500 underline hover:text-zinc-300">
+          <button
+            onClick={loadMore}
+            className="text-sm text-zinc-500 underline hover:text-zinc-300"
+          >
             Yükleme başarısız. Tekrar dene
           </button>
         </div>
-      ) : hasMore ? (
+      ) : cursor ? (
         <div ref={sentinelRef} className="py-6 text-center text-zinc-500">
           {isPending && <Loader2 size={20} className="mx-auto animate-spin" />}
         </div>

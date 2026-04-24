@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Heart, Bookmark, MessageCircle } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Share2 } from "lucide-react";
 import { toggleLike, toggleBookmark } from "@/app/actions/interactions";
 
 interface ToggleButtonProps {
@@ -119,5 +119,33 @@ export function CommentButton({
       />
       <span className="min-w-[1ch] text-sm">{count}</span>
     </Link>
+  );
+}
+
+export function ShareButton({ postId }: { postId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleShare(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/post/${postId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      className={`group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-all active:scale-95 ${
+        copied
+          ? "text-blue-400"
+          : "text-zinc-500 hover:bg-blue-500/10 hover:text-blue-400"
+      }`}
+    >
+      <Share2 size={18} className="transition-transform group-active:scale-90" />
+      {copied && <span className="text-sm">Kopyalandı!</span>}
+    </button>
   );
 }

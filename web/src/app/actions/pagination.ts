@@ -3,7 +3,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { uuidSchema, LIMITS } from "@/lib/schemas";
 import { z } from "zod";
-import type { PostWithAuthor, JobWithAuthor, BidWithJob, Profile, NotificationWithActor, NotificationType } from "@/types/database";
+import type {
+  PostWithAuthor,
+  JobWithAuthor,
+  BidWithJob,
+  Profile,
+  NotificationWithActor,
+  NotificationType,
+} from "@/types/database";
 
 const PAGE_SIZE = LIMITS.pagination.pageSize;
 
@@ -19,13 +26,21 @@ const JOB_SELECT = `
   job_tags (tags (*))
 ` as const;
 
+const BID_SELECT = `
+  *,
+  jobs (
+    *,
+    profiles (*)
+  )
+` as const;
+
 const cursorSchema = z.string().min(1);
 
 // ── Ana sayfa feed ────────────────────────────────────────────
 export async function loadMoreFeedPosts(
   cursor: string
-): Promise<PostWithAuthor[]> {
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: PostWithAuthor[]; fetchError: boolean }> {
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -35,17 +50,17 @@ export async function loadMoreFeedPosts(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as PostWithAuthor[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as PostWithAuthor[], fetchError: false };
 }
 
 // ── Kullanıcı gönderileri ─────────────────────────────────────
 export async function loadMoreUserPosts(
   userId: string,
   cursor: string
-): Promise<PostWithAuthor[]> {
-  if (!uuidSchema.safeParse(userId).success) return [];
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: PostWithAuthor[]; fetchError: boolean }> {
+  if (!uuidSchema.safeParse(userId).success) return { data: [], fetchError: false };
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -56,19 +71,19 @@ export async function loadMoreUserPosts(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as PostWithAuthor[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as PostWithAuthor[], fetchError: false };
 }
 
 // ── Kullanıcı beğenileri ──────────────────────────────────────
 export async function loadMoreUserLikes(
   userId: string,
   cursor: string
-): Promise<{ posts: PostWithAuthor[]; nextCursor: string | null }> {
+): Promise<{ posts: PostWithAuthor[]; nextCursor: string | null; fetchError: boolean }> {
   if (!uuidSchema.safeParse(userId).success)
-    return { posts: [], nextCursor: null };
+    return { posts: [], nextCursor: null, fetchError: false };
   if (!cursorSchema.safeParse(cursor).success)
-    return { posts: [], nextCursor: null };
+    return { posts: [], nextCursor: null, fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -79,7 +94,7 @@ export async function loadMoreUserLikes(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return { posts: [], nextCursor: null };
+  if (error || !data) return { posts: [], nextCursor: null, fetchError: true };
 
   const posts = data
     .map((row) => row.posts)
@@ -87,16 +102,50 @@ export async function loadMoreUserLikes(
   const nextCursor =
     data.length === PAGE_SIZE ? data[data.length - 1].created_at : null;
 
-  return { posts, nextCursor };
+  return { posts, nextCursor, fetchError: false };
+}
+
+// ── Kullanıcı yer imleri (private) ────────────────────────────
+export async function loadMoreBookmarks(
+  cursor: string
+): Promise<{ posts: PostWithAuthor[]; nextCursor: string | null; fetchError: boolean }> {
+  if (!cursorSchema.safeParse(cursor).success)
+    return { posts: [], nextCursor: null, fetchError: false };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user)
+    return { posts: [], nextCursor: null, fetchError: false };
+
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select(`post_id, created_at, posts (${POST_SELECT})`)
+    .eq("user_id", user.id)
+    .lt("created_at", cursor)
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
+
+  if (error || !data) return { posts: [], nextCursor: null, fetchError: true };
+
+  const posts = data
+    .map((row) => row.posts)
+    .filter((p): p is PostWithAuthor => p !== null);
+  const nextCursor =
+    data.length === PAGE_SIZE ? data[data.length - 1].created_at : null;
+
+  return { posts, nextCursor, fetchError: false };
 }
 
 // ── Kullanıcı ilanları ────────────────────────────────────────
 export async function loadMoreUserJobs(
   userId: string,
   cursor: string
-): Promise<JobWithAuthor[]> {
-  if (!uuidSchema.safeParse(userId).success) return [];
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: JobWithAuthor[]; fetchError: boolean }> {
+  if (!uuidSchema.safeParse(userId).success) return { data: [], fetchError: false };
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -107,15 +156,15 @@ export async function loadMoreUserJobs(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as JobWithAuthor[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as JobWithAuthor[], fetchError: false };
 }
 
 // ── Açık İlanlar (jobs sayfası) ──────────────────────────────
 export async function loadMoreOpenJobs(
   cursor: string
-): Promise<JobWithAuthor[]> {
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: JobWithAuthor[]; fetchError: boolean }> {
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -126,17 +175,17 @@ export async function loadMoreOpenJobs(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as JobWithAuthor[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as JobWithAuthor[], fetchError: false };
 }
 
 // ── Benim İlanlarım ───────────────────────────────────────────
 export async function loadMoreMyJobs(
   userId: string,
   cursor: string
-): Promise<JobWithAuthor[]> {
-  if (!uuidSchema.safeParse(userId).success) return [];
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: JobWithAuthor[]; fetchError: boolean }> {
+  if (!uuidSchema.safeParse(userId).success) return { data: [], fetchError: false };
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -147,25 +196,17 @@ export async function loadMoreMyJobs(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as JobWithAuthor[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as JobWithAuthor[], fetchError: false };
 }
 
 // ── Verdiğim Teklifler ────────────────────────────────────────
-const BID_SELECT = `
-  *,
-  jobs (
-    *,
-    profiles (*)
-  )
-` as const;
-
 export async function loadMoreMyBids(
   userId: string,
   cursor: string
-): Promise<BidWithJob[]> {
-  if (!uuidSchema.safeParse(userId).success) return [];
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: BidWithJob[]; fetchError: boolean }> {
+  if (!uuidSchema.safeParse(userId).success) return { data: [], fetchError: false };
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -176,17 +217,17 @@ export async function loadMoreMyBids(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data as BidWithJob[];
+  if (error || !data) return { data: [], fetchError: true };
+  return { data: data as BidWithJob[], fetchError: false };
 }
 
 // ── Takipçiler ────────────────────────────────────────────────
 export async function loadMoreFollowers(
   username: string,
   cursor: string
-): Promise<{ profiles: Profile[]; nextCursor: string | null }> {
+): Promise<{ profiles: Profile[]; nextCursor: string | null; fetchError: boolean }> {
   if (!cursorSchema.safeParse(cursor).success)
-    return { profiles: [], nextCursor: null };
+    return { profiles: [], nextCursor: null, fetchError: false };
 
   const supabase = await createClient();
   const { data: profile } = await supabase
@@ -195,7 +236,7 @@ export async function loadMoreFollowers(
     .eq("username", username)
     .maybeSingle();
 
-  if (!profile) return { profiles: [], nextCursor: null };
+  if (!profile) return { profiles: [], nextCursor: null, fetchError: false };
 
   const { data, error } = await supabase
     .from("follows")
@@ -205,22 +246,22 @@ export async function loadMoreFollowers(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return { profiles: [], nextCursor: null };
+  if (error || !data) return { profiles: [], nextCursor: null, fetchError: true };
 
   const profiles = data.map((row) => row.follower as unknown as Profile);
   const nextCursor =
     data.length === PAGE_SIZE ? data[data.length - 1].created_at : null;
 
-  return { profiles, nextCursor };
+  return { profiles, nextCursor, fetchError: false };
 }
 
 // ── Takip edilenler ───────────────────────────────────────────
 export async function loadMoreFollowing(
   username: string,
   cursor: string
-): Promise<{ profiles: Profile[]; nextCursor: string | null }> {
+): Promise<{ profiles: Profile[]; nextCursor: string | null; fetchError: boolean }> {
   if (!cursorSchema.safeParse(cursor).success)
-    return { profiles: [], nextCursor: null };
+    return { profiles: [], nextCursor: null, fetchError: false };
 
   const supabase = await createClient();
   const { data: profile } = await supabase
@@ -229,7 +270,7 @@ export async function loadMoreFollowing(
     .eq("username", username)
     .maybeSingle();
 
-  if (!profile) return { profiles: [], nextCursor: null };
+  if (!profile) return { profiles: [], nextCursor: null, fetchError: false };
 
   const { data, error } = await supabase
     .from("follows")
@@ -239,24 +280,27 @@ export async function loadMoreFollowing(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return { profiles: [], nextCursor: null };
+  if (error || !data) return { profiles: [], nextCursor: null, fetchError: true };
 
   const profiles = data.map((row) => row.following as unknown as Profile);
   const nextCursor =
     data.length === PAGE_SIZE ? data[data.length - 1].created_at : null;
 
-  return { profiles, nextCursor };
+  return { profiles, nextCursor, fetchError: false };
 }
 
 // ── Bildirimler ───────────────────────────────────────────────
 export async function loadMoreNotifications(
   cursor: string
-): Promise<NotificationWithActor[]> {
-  if (!cursorSchema.safeParse(cursor).success) return [];
+): Promise<{ data: NotificationWithActor[]; fetchError: boolean }> {
+  if (!cursorSchema.safeParse(cursor).success) return { data: [], fetchError: false };
 
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return [];
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { data: [], fetchError: false };
 
   const { data, error } = await supabase
     .from("notifications")
@@ -266,15 +310,18 @@ export async function loadMoreNotifications(
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (error || !data) return [];
-  return data.map((item) => ({
-    id: item.id,
-    user_id: item.user_id,
-    actor_id: item.actor_id,
-    type: item.type as NotificationType,
-    entity_id: item.entity_id,
-    is_read: item.is_read,
-    created_at: item.created_at,
-    actor: item.actor as unknown as Profile,
-  }));
+  if (error || !data) return { data: [], fetchError: true };
+  return {
+    data: data.map((item) => ({
+      id: item.id,
+      user_id: item.user_id,
+      actor_id: item.actor_id,
+      type: item.type as NotificationType,
+      entity_id: item.entity_id,
+      is_read: item.is_read,
+      created_at: item.created_at,
+      actor: item.actor as unknown as Profile,
+    })),
+    fetchError: false,
+  };
 }

@@ -50,6 +50,30 @@ export async function getCommentsByPostId(
   return (data as CommentWithAuthor[]) ?? [];
 }
 
+export async function getBookmarkedPosts(
+  userId: string
+): Promise<{ posts: PostWithAuthor[]; nextCursor: string | null; fetchError: boolean }> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select(
+      `post_id, created_at, posts (*, profiles (*), post_tags (tags (*)))`
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error || !data) return { posts: [], nextCursor: null, fetchError: true };
+
+  const posts = data
+    .map((row) => row.posts)
+    .filter((p): p is PostWithAuthor => p !== null);
+  const nextCursor = data.length === 20 ? data[data.length - 1].created_at : null;
+
+  return { posts, nextCursor, fetchError: false };
+}
+
 export async function getPostInteractionState(
   postId: string,
   userId: string

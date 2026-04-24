@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Home, Search, Briefcase, Bell, Mail, User, LogOut, X } from "lucide-react";
+import { Home, Search, Briefcase, Bell, Mail, User, LogOut, X, Bookmark, Settings } from "lucide-react";
 import { logout } from "@/app/actions";
 
 interface MobileSidebarProps {
@@ -18,6 +18,8 @@ const navItems = [
   { href: "/jobs", icon: Briefcase, label: "İlanlar" },
   { href: "/notifications", icon: Bell, label: "Bildirimler" },
   { href: "/messages", icon: Mail, label: "Mesajlar" },
+  { href: "/bookmarks", icon: Bookmark, label: "Yer İmleri" },
+  { href: "/settings", icon: Settings, label: "Ayarlar" },
 ];
 
 export default function MobileSidebar({

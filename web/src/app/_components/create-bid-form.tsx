@@ -39,8 +39,21 @@ export default function CreateBidForm({ jobId, isRetry = false }: CreateBidFormP
     return (
       <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
         <p className="text-sm font-medium text-green-400">
-          Teklifiniz başarıyla gönderildi!
+          ✓ Teklifiniz başarıyla gönderildi!
         </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-4">
+        <div className="flex items-center gap-3">
+          <Loader2 size={18} className="animate-spin text-zinc-400" />
+          <p className="text-sm font-medium text-zinc-400">
+            Teklifiniz gönderiliyor...
+          </p>
+        </div>
       </div>
     );
   }

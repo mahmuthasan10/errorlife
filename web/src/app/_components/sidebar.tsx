@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Briefcase, Bell, Mail, User, LogOut } from "lucide-react";
+import { Home, Search, Briefcase, Bell, Mail, User, LogOut, Bookmark, Settings } from "lucide-react";
 import { logout } from "@/app/actions";
 import { useBadge } from "./badge-provider";
 
@@ -33,6 +33,8 @@ export default function Sidebar({ currentUsername }: SidebarProps) {
     { href: "/jobs", icon: Briefcase, label: "İlanlar", badge: 0 },
     { href: "/notifications", icon: Bell, label: "Bildirimler", badge: notifCount },
     { href: "/messages", icon: Mail, label: "Mesajlar", badge: messageCount },
+    { href: "/bookmarks", icon: Bookmark, label: "Yer İmleri", badge: 0 },
+    { href: "/settings", icon: Settings, label: "Ayarlar", badge: 0 },
   ];
 
   return (

@@ -346,34 +346,44 @@ Sonra web'deki server action'ları da aynı RPC'yi çağıracak şekilde refacto
 ## UYGULAMA SIRASI (Önerilen Sprint Planı)
 
 ### Sprint 1 — Acil Güvenlik (3-4 gün)
-- [ ] [S-01] RPC `create_post_with_tags` fix + web refactor
-- [ ] [S-02] Bids UPDATE WITH CHECK
-- [ ] [S-03] Messages UPDATE kolon kısıtlama trigger
-- [ ] [S-05] createPost tags validation
-- [ ] [B-01] notification-item null actor guard
-- [ ] [B-02] Entity silme notification cleanup trigger'ları
-- [ ] [B-03] notification-provider COMMENT ekleme
+- [x] [S-01] RPC `create_post_with_tags` fix + web refactor (014_fix_create_post_rpc.sql)
+- [x] [S-02] Bids UPDATE WITH CHECK (015_security_fixes.sql)
+- [x] [S-03] Messages UPDATE kolon kısıtlama trigger (015_security_fixes.sql)
+- [x] [S-05] createPost tags validation (actions.ts Zod)
+- [x] [B-01] notification-item null actor guard
+- [x] [B-02] Entity silme notification cleanup trigger'ları (017_notification_cleanup_triggers.sql)
+- [x] [B-03] notification-provider COMMENT ekleme
 
 ### Sprint 2 — Güvenlik Tamamlama (2-3 gün)
-- [ ] [S-04] startChat input validation
-- [ ] [S-06] Like/Bookmark atomic toggle
-- [ ] [S-07] Şifre minimum 8 karakter
-- [ ] [S-08] Upload magic bytes doğrulama
-- [ ] [S-09] Search ILIKE escape
-- [ ] [S-10] Search p_limit sınırlama
-- [ ] [B-04] Jobs sorguları limit ekleme
+- [x] [S-04] startChat input validation (uuidSchema)
+- [x] [S-06] Like/Bookmark atomic toggle (interactions.ts)
+- [x] [S-07] Şifre minimum 8 karakter (settings.ts)
+- [x] [S-08] Upload magic bytes doğrulama (upload.ts)
+- [x] [S-09] Search ILIKE escape (016_search_security_fixes.sql)
+- [x] [S-10] Search p_limit sınırlama (LEAST(p_limit,100))
+- [x] [B-04] Jobs sorguları limit ekleme
 
 ### Sprint 3 — Pagination (4-5 gün)
-- [ ] [U-01] Infinite scroll hook + tüm sayfalara uygulama
-- [ ] Feed -> Jobs -> Profil tabları -> Mesajlar -> Bildirimler -> Followers
+- [x] [U-01] Infinite scroll hook + tüm sayfalara uygulama
+- [x] Feed (realtime-feed.tsx) — IntersectionObserver sentinel
+- [x] Jobs (jobs-feed-client.tsx) — OpenJobsList, MyJobsList, MyBidsList
+- [x] Profil tabları — posts-list-client.tsx, likes-list-client.tsx, jobs-list-client.tsx
+- [x] Followers/Following — users-list-client.tsx
 
 ### Sprint 4 — UX İyileştirme (2-3 gün)
-- [ ] [U-02] Form optimistic preview
-- [ ] [U-03] Data error boundary component
+- [x] [U-02] Form optimistic preview
+  - [x] create-job-form.tsx → JobFeedContext + skeleton (job-feed-context.tsx)
+  - [x] jobs-feed-client.tsx → JobSkeleton (OpenJobsList + MyJobsList)
+  - [x] create-bid-form.tsx → loading anında anlık "Gönderiliyor..." paneli
+- [x] [U-03] Data error boundary component
+  - [x] FetchError reusable bileşeni (fetch-error.tsx) — "Tekrar Dene" router.refresh()
+  - [x] page.tsx (feed) + jobs/page.tsx — sunucu hata ayırt etme
+  - [x] pagination.ts — tüm fonksiyonlar {data, fetchError} döndürüyor
+  - [x] realtime-feed, jobs-feed-client, posts/likes/jobs/users-list-client — loadMore hata satırı + retry
 
 ### Sprint 5 — Mobil Hazırlık (4-5 gün)
-- [ ] [M-01] 5 server action -> Supabase RPC dönüşümü
-- [ ] [M-03] Shared types paketi oluşturma
+- [x] [M-01] 5 server action -> Supabase RPC dönüşümü (018_job_rpcs.sql + 019_fix_accept_bid_race.sql)
+- [x] [M-03] Shared types paketi oluşturma (packages/shared/)
 
 ---
 

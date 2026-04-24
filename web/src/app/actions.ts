@@ -73,6 +73,70 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   return { error: null };
 }
 
+export async function editPost(
+  postId: string,
+  content: string,
+  tags: string[]
+): Promise<ActionResult> {
+  const parsedId = uuidSchema.safeParse(postId);
+  if (!parsedId.success) return { error: "Geçersiz gönderi ID." };
+
+  const trimmed = content?.trim();
+  if (!trimmed) return { error: "Gönderi içeriği boş olamaz." };
+  if (trimmed.length > LIMITS.post.content.max)
+    return { error: `Gönderi en fazla ${LIMITS.post.content.max} karakter olabilir.` };
+
+  const tagsResult = z
+    .array(z.string().min(LIMITS.post.tagName.min).max(LIMITS.post.tagName.max))
+    .max(LIMITS.post.tags.max)
+    .safeParse(tags);
+  if (!tagsResult.success) return { error: "Geçersiz etiket formatı." };
+
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) return { error: "Bu işlem için giriş yapmalısınız." };
+
+    const { error: updateError } = await supabase
+      .from("posts")
+      .update({ content: trimmed })
+      .eq("id", parsedId.data)
+      .eq("user_id", user.id);
+
+    if (updateError) return { error: "Gönderi güncellenemedi." };
+
+    // Mevcut etiketleri sil, yenilerini ekle
+    await supabase.from("post_tags").delete().eq("post_id", parsedId.data);
+
+    for (const tagName of tagsResult.data) {
+      const slug = slugify(tagName);
+      await supabase.from("tags").upsert({ name: tagName, slug }, { onConflict: "slug" });
+      const { data: tag } = await supabase
+        .from("tags")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+      if (tag) {
+        await supabase
+          .from("post_tags")
+          .insert({ post_id: parsedId.data, tag_id: tag.id })
+          .throwOnError();
+      }
+    }
+  } catch {
+    return { error: "Beklenmeyen bir hata oluştu." };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
+  return { error: null };
+}
+
 export async function deletePost(postId: string): Promise<ActionResult> {
   const parsed = uuidSchema.safeParse(postId);
   if (!parsed.success) {

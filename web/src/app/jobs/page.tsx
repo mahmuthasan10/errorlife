@@ -4,11 +4,13 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import type { JobWithAuthor, BidWithJob } from "@/types/database";
 import CreateJobForm from "@/app/_components/create-job-form";
+import FetchError from "@/app/_components/fetch-error";
 import {
   OpenJobsList,
   MyJobsList,
   MyBidsList,
 } from "./_components/jobs-feed-client";
+import { JobFeedProvider } from "./_components/job-feed-context";
 
 export const metadata: Metadata = {
   title: "İlanlar | ErrorLife",
@@ -28,7 +30,7 @@ const BID_SELECT = `
   jobs (*, profiles (*))
 ` as const;
 
-async function getOpenJobs(): Promise<JobWithAuthor[]> {
+async function getOpenJobs(): Promise<{ jobs: JobWithAuthor[]; fetchError: boolean }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("jobs")
@@ -36,11 +38,11 @@ async function getOpenJobs(): Promise<JobWithAuthor[]> {
     .eq("status", "open")
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
-  if (error) return [];
-  return (data as JobWithAuthor[]) ?? [];
+  if (error) return { jobs: [], fetchError: true };
+  return { jobs: (data as JobWithAuthor[]) ?? [], fetchError: false };
 }
 
-async function getMyJobs(userId: string): Promise<JobWithAuthor[]> {
+async function getMyJobs(userId: string): Promise<{ jobs: JobWithAuthor[]; fetchError: boolean }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("jobs")
@@ -48,11 +50,11 @@ async function getMyJobs(userId: string): Promise<JobWithAuthor[]> {
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
-  if (error) return [];
-  return (data as JobWithAuthor[]) ?? [];
+  if (error) return { jobs: [], fetchError: true };
+  return { jobs: (data as JobWithAuthor[]) ?? [], fetchError: false };
 }
 
-async function getMyBids(userId: string): Promise<BidWithJob[]> {
+async function getMyBids(userId: string): Promise<{ bids: BidWithJob[]; fetchError: boolean }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bids")
@@ -60,8 +62,8 @@ async function getMyBids(userId: string): Promise<BidWithJob[]> {
     .eq("expert_id", userId)
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE);
-  if (error) return [];
-  return (data as BidWithJob[]) ?? [];
+  if (error) return { bids: [], fetchError: true };
+  return { bids: (data as BidWithJob[]) ?? [], fetchError: false };
 }
 
 type TabKey = "all" | "my-jobs" | "my-bids";
@@ -87,14 +89,27 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
 
   let jobs: JobWithAuthor[] = [];
   let myBids: BidWithJob[] = [];
+  let fetchError = false;
 
   if (activeTab === "my-jobs" && user) {
-    jobs = await getMyJobs(user.id);
+    const result = await getMyJobs(user.id);
+    jobs = result.jobs;
+    fetchError = result.fetchError;
   } else if (activeTab === "my-bids" && user) {
-    myBids = await getMyBids(user.id);
+    const result = await getMyBids(user.id);
+    myBids = result.bids;
+    fetchError = result.fetchError;
   } else {
-    jobs = await getOpenJobs();
+    const result = await getOpenJobs();
+    jobs = result.jobs;
+    fetchError = result.fetchError;
   }
+
+  const errorMessages: Record<TabKey, string> = {
+    all: "İlanlar yüklenemedi.",
+    "my-jobs": "İlanlarınız yüklenemedi.",
+    "my-bids": "Teklifleriniz yüklenemedi.",
+  };
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
@@ -134,17 +149,20 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
         </div>
       </div>
 
-      {/* İlan Oluştur */}
-      {activeTab !== "my-bids" && <CreateJobForm />}
+      {/* İlan Oluştur + Liste — ortak context içinde */}
+      <JobFeedProvider>
+        {activeTab !== "my-bids" && <CreateJobForm />}
 
-      {/* İçerik */}
-      {activeTab === "my-bids" ? (
-        <MyBidsList initialBids={myBids} userId={user?.id ?? ""} />
-      ) : activeTab === "my-jobs" ? (
-        <MyJobsList initialJobs={jobs} userId={user?.id ?? ""} />
-      ) : (
-        <OpenJobsList initialJobs={jobs} />
-      )}
+        {fetchError ? (
+          <FetchError message={errorMessages[activeTab]} />
+        ) : activeTab === "my-bids" ? (
+          <MyBidsList initialBids={myBids} userId={user?.id ?? ""} />
+        ) : activeTab === "my-jobs" ? (
+          <MyJobsList initialJobs={jobs} userId={user?.id ?? ""} />
+        ) : (
+          <OpenJobsList initialJobs={jobs} />
+        )}
+      </JobFeedProvider>
     </div>
   );
 }
