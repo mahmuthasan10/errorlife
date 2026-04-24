@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { register } from "./actions";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Başarılı kayıttan sonra 3 sn içinde /login'e yönlendir
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => router.push("/login"), 3000);
+    return () => clearTimeout(t);
+  }, [success, router]);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -48,14 +57,26 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Başarı mesajı */}
+        {/* Başarı mesajı + CTA */}
         {success && (
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-            {success}
+          <div className="space-y-3">
+            <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+              {success}
+            </div>
+            <Link
+              href="/login"
+              className="block w-full rounded-full bg-white py-3 text-center text-sm font-bold text-black transition-opacity hover:opacity-90"
+            >
+              Giriş sayfasına git
+            </Link>
+            <p className="text-center text-xs text-zinc-500">
+              3 saniye içinde otomatik yönlendirileceksiniz…
+            </p>
           </div>
         )}
 
-        {/* Form */}
+        {/* Form (başarıda gizle) */}
+        {!success && (
         <form action={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -134,6 +155,7 @@ export default function RegisterPage() {
             {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
           </button>
         </form>
+        )}
 
         {/* Giriş linki */}
         <p className="text-center text-sm text-zinc-500">

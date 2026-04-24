@@ -20,8 +20,9 @@ interface EditPostButtonProps {
 }
 
 function extractHashtags(text: string): string[] {
+  // Tag'in arkasında whitespace veya string sonu şart — kısmi match'leri yakalamaz
   const regex =
-    /(?:^|\s)#([a-zA-Z0-9\u00C0-\u024F\u011F\u00FC\u015F\u00F6\u00E7\u0131\u0130\u011E\u00DC\u015E\u00D6\u00C7]{1,30})/g;
+    /(?:^|\s)#([a-zA-Z0-9\u00C0-\u024F\u011F\u00FC\u015F\u00F6\u00E7\u0131\u0130\u011E\u00DC\u015E\u00D6\u00C7]{1,30})(?=\s|$)/g;
   const found: string[] = [];
   let match;
   while ((match = regex.exec(text)) !== null) {
@@ -78,11 +79,7 @@ export default function EditPostButton({
     el.style.height = `${el.scrollHeight}px`;
 
     const detected = extractHashtags(val);
-    setTags((prev) => {
-      const merged = [...prev];
-      detected.forEach((t) => { if (!merged.includes(t)) merged.push(t); });
-      return merged.filter((t) => detected.includes(t) || prev.includes(t));
-    });
+    setTags(Array.from(new Set(detected)));
   }
 
   function removeTag(tag: string) {

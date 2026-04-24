@@ -120,7 +120,8 @@ export default function CreatePostForm() {
   }
 
   function extractHashtags(text: string): string[] {
-    const regex = /(?:^|\s)#([a-zA-Z0-9\u00C0-\u024F\u011F\u00FC\u015F\u00F6\u00E7\u0131\u0130\u011E\u00DC\u015E\u00D6\u00C7]{1,30})/g;
+    // Tag'in arkasında whitespace veya string sonu şart — kısmi match'leri (ör. "#f" yazarken "f") yakalamaz
+    const regex = /(?:^|\s)#([a-zA-Z0-9\u00C0-\u024F\u011F\u00FC\u015F\u00F6\u00E7\u0131\u0130\u011E\u00DC\u015E\u00D6\u00C7]{1,30})(?=\s|$)/g;
     const found: string[] = [];
     let match;
     while ((match = regex.exec(text)) !== null) {
@@ -137,18 +138,9 @@ export default function CreatePostForm() {
     target.style.height = "auto";
     target.style.height = `${target.scrollHeight}px`;
 
-    // İçerikten hashtag'leri tespit et ve mevcut etiket listesiyle birleştir
+    // Metinde aktif olan tag'ler neyse onu göster; silinen tag tekrar yazılmazsa gelmez
     const detected = extractHashtags(newContent);
-    setSuggestedTags((prev) => {
-      const merged = [...prev];
-      detected.forEach((tag) => {
-        if (!merged.includes(tag)) merged.push(tag);
-      });
-      // İçerikten kaldırılan hashtag'leri de listeden çıkar
-      return merged.filter(
-        (tag) => detected.includes(tag) || prev.includes(tag)
-      );
-    });
+    setSuggestedTags(Array.from(new Set(detected)));
   }
 
   return (

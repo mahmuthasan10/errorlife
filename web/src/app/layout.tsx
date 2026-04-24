@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { createClient } from "@/utils/supabase/server";
@@ -62,6 +63,16 @@ export default async function RootLayout({
 
   const isAuth = !!user;
 
+  // Auth sayfalarında (login/register/forgot/reset) sidebar'ı gizle
+  const h = await headers();
+  const pathname = h.get("x-pathname") ?? "";
+  const isAuthRoute =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/auth");
+
   return (
     <html lang="tr" className="dark">
       <body
@@ -69,7 +80,7 @@ export default async function RootLayout({
       >
         {user && <NotificationProvider currentUserId={user.id} />}
 
-        {isAuth && user ? (
+        {isAuth && user && !isAuthRoute ? (
           <BadgeProvider
             initialNotifCount={unreadNotifCount}
             initialMessageCount={unreadMessageCount}

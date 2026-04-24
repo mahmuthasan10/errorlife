@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // İç tarafa pathname'i ilet (root layout'ta auth sayfalarını tanımak için)
+  request.headers.set("x-pathname", request.nextUrl.pathname);
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -35,7 +38,7 @@ export async function updateSession(request: NextRequest) {
 
   // Giriş yapmamış kullanıcıları /login'e yönlendir
   // /login ve /register sayfaları herkese açık
-  const publicPaths = ["/login", "/register"];
+  const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password", "/auth"];
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
