@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { updateProfileSchema } from "@/lib/schemas";
+import { updateProfileSchema } from "@errorlife/shared/schemas";
 
 export type SettingsResult = {
   error: string | null;

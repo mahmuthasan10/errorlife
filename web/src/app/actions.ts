@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { slugify } from "@/lib/utils";
-import { uuidSchema, LIMITS } from "@/lib/schemas";
+import { uuidSchema, LIMITS } from "@errorlife/shared/schemas";
 
 export type ActionResult = {
   error: string | null;

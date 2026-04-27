@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getOrCreateChat } from "@/lib/chat-queries";
-import { uuidSchema, sendMessageSchema } from "@/lib/schemas";
+import { uuidSchema, sendMessageSchema } from "@errorlife/shared/schemas";
 
 export type ChatActionResult = {
   error: string | null;

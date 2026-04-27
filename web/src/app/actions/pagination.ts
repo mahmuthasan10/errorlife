@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { uuidSchema, LIMITS } from "@/lib/schemas";
+import { uuidSchema, LIMITS } from "@errorlife/shared/schemas";
 import { z } from "zod";
 import type {
   PostWithAuthor,

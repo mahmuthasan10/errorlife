@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { uuidSchema } from "@/lib/schemas";
+import { uuidSchema } from "@errorlife/shared/schemas";
 import type { ActionResult } from "../actions";
 
 export async function markAsRead(

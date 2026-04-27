@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { uuidSchema, createJobSchema, createBidSchema } from "@/lib/schemas";
+import { uuidSchema, createJobSchema, createBidSchema } from "@errorlife/shared/schemas";
 import type { ActionResult } from "../actions";
 
 const statusSchema = z.enum(["open", "in_progress", "closed"]);

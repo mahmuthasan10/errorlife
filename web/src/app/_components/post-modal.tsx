@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useCallback, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { X } from "lucide-react";
 
 export default function PostModal({
@@ -10,12 +10,31 @@ export default function PostModal({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [closeRequested, setCloseRequested] = useState(false);
+
+  // Modal yalnızca /post/* yolundayken ve manuel kapatılmamışken görünür.
+  // Modal içindeki <Link href="/profile/..."> gibi soft-nav geçişlerinde
+  // pathname değiştiği an `open` türetilen değeri otomatik false olur,
+  // overlay/scroll lock takılı kalmaz.
+  const open = pathname?.startsWith("/post/") === true && !closeRequested;
 
   const handleClose = useCallback(() => {
-    router.back();
+    setCloseRequested(true);
+    // Sadece aynı origin'den gelen güvenli bir history girdisi varsa back yap;
+    // aksi halde feed'e geri dön (history kirlenmesini önler).
+    const sameOriginReferrer =
+      typeof document !== "undefined" &&
+      document.referrer.startsWith(window.location.origin);
+    if (window.history.length > 1 && sameOriginReferrer) {
+      router.back();
+    } else {
+      router.push("/");
+    }
   }, [router]);
 
   useEffect(() => {
+    if (!open) return;
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(e: KeyboardEvent) {
@@ -30,7 +49,9 @@ export default function PostModal({
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleClose]);
+  }, [open, handleClose]);
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">

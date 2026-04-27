@@ -17,21 +17,8 @@ import { supabase } from "../../../src/lib/supabase";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import Avatar from "../../../src/components/ui/Avatar";
 import { formatTimeAgo } from "../../../src/utils/format-time";
-import type { JobWithAuthor, Profile } from "../../../src/types/database";
-
-// ─── Tipler ──────────────────────────────────────────────────────────────────
-
-type Bid = {
-  id: string;
-  job_id: string;
-  expert_id: string;
-  amount: number;
-  estimated_days: number;
-  cover_letter: string;
-  status: "pending" | "accepted" | "rejected";
-  created_at: string;
-  profiles: Profile;
-};
+import type { JobWithAuthor } from "../../../src/types/database";
+import type { BidWithExpert as Bid } from "@errorlife/shared/types";
 
 const STATUS_CONFIG = {
   open: {

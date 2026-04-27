@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Pencil, X, Loader2 } from "lucide-react";
 import { editPost } from "@/app/actions";
-import { LIMITS } from "@/lib/schemas";
+import { LIMITS } from "@errorlife/shared/schemas";
 
 interface Tag {
   id: string;

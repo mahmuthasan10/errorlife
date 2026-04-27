@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
+import { useNotificationBadge } from "../../src/hooks/useNotificationBadge";
 
 type IoniconsName = ComponentProps<typeof Ionicons>["name"];
 
@@ -26,6 +27,12 @@ const tabs: {
     iconDefault: "briefcase-outline",
   },
   {
+    name: "notifications",
+    title: "Bildirimler",
+    iconFocused: "notifications",
+    iconDefault: "notifications-outline",
+  },
+  {
     name: "messages",
     title: "Mesajlar",
     iconFocused: "chatbubbles",
@@ -40,6 +47,14 @@ const tabs: {
 ];
 
 export default function TabsLayout() {
+  const { notifCount, messageCount } = useNotificationBadge();
+
+  const badgeFor = (name: string): number | undefined => {
+    if (name === "notifications" && notifCount > 0) return notifCount;
+    if (name === "messages" && messageCount > 0) return messageCount;
+    return undefined;
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -73,6 +88,16 @@ export default function TabsLayout() {
                 color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
               />
             ),
+            tabBarBadge: badgeFor(tab.name),
+            tabBarBadgeStyle: {
+              backgroundColor: "#ef4444",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: "700",
+              minWidth: 18,
+              height: 18,
+              lineHeight: 18,
+            },
           }}
         />
       ))}
