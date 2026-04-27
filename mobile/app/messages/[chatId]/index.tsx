@@ -13,6 +13,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../src/lib/supabase";
@@ -134,6 +135,7 @@ export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<MessageWithMeta[]>([]);
   const [otherUser, setOtherUser] = useState<Profile | null>(null);
@@ -314,6 +316,11 @@ export default function ChatRoomScreen() {
           setIsOtherTyping(false);
 
           setMessages((prev) => addDateSeparators([incoming, ...prev]));
+
+          // inverted FlatList'te "en alta kaydır" = scrollToOffset(0)
+          setTimeout(() => {
+            listRef.current?.scrollToOffset({ offset: 0, animated: true });
+          }, 100);
 
           supabase
             .from("messages")
@@ -497,8 +504,11 @@ export default function ChatRoomScreen() {
       className="flex-1 bg-black"
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
-      {/* Header */}
-      <View className="flex-row items-center px-3 py-3 border-b border-zinc-800 bg-black pt-14">
+      {/* Header — SafeAreaView yerine inset kullanıyoruz (KeyboardAvoidingView içinde olduğu için) */}
+      <View
+        style={{ paddingTop: insets.top + 8 }}
+        className="flex-row items-center px-3 pb-3 border-b border-zinc-800 bg-black"
+      >
         <TouchableOpacity
           onPress={() => router.back()}
           activeOpacity={0.7}
@@ -566,7 +576,10 @@ export default function ChatRoomScreen() {
       {isOtherTyping && <TypingIndicator />}
 
       {/* Mesaj Yazma Alanı */}
-      <View className="flex-row items-end px-4 py-3 border-t border-zinc-800 gap-3 pb-8">
+      <View
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        className="flex-row items-end px-4 pt-3 border-t border-zinc-800 gap-3"
+      >
         <TextInput
           className="flex-1 bg-zinc-900 text-white rounded-2xl px-4 py-2.5 text-[14px] border border-zinc-800 max-h-32"
           placeholder="Mesaj yaz..."

@@ -50,6 +50,28 @@ function RootLayoutNav() {
           name="messages/[chatId]"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="new-job"
+          options={{
+            presentation: "formSheet",
+            headerShown: false,
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 20,
+          }}
+        />
+        <Stack.Screen
+          name="edit-profile"
+          options={{
+            presentation: "formSheet",
+            headerShown: false,
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 20,
+          }}
+        />
+        <Stack.Screen
+          name="jobs/[id]"
+          options={{ headerShown: false }}
+        />
       </Stack>
 
       {isLoading && (

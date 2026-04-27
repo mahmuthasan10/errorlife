@@ -119,6 +119,8 @@ export type Notification = {
 export type PostWithAuthor = Post & {
   profiles: Profile;
   post_tags: { tags: Tag }[];
+  user_likes?: { user_id: string }[];
+  user_bookmarks?: { user_id: string }[];
 };
 
 export type JobWithAuthor = Job & {

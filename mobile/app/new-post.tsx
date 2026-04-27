@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 import { useRouter } from "expo-router";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/AuthProvider";
+import Avatar from "../src/components/ui/Avatar";
+import type { Profile } from "../src/types/database";
 
 const MAX_LENGTH = 500;
 
@@ -21,11 +23,25 @@ export default function NewPostModal() {
 
   const [content, setContent] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   const trimmed = content.trim();
   const canPublish = trimmed.length > 0 && !isPublishing;
   const charCount = trimmed.length;
+
+  // Kullanıcı profilini çek (avatar için)
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("avatar_url, display_name, username")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setProfile(data as Profile);
+      });
+  }, [user]);
 
   const handlePublish = async () => {
     if (!canPublish || !user) return;
@@ -50,9 +66,10 @@ export default function NewPostModal() {
     }
   };
 
-  const initial = user?.user_metadata?.username
-    ? (user.user_metadata.username as string).charAt(0).toUpperCase()
-    : "?";
+  const avatarFallback =
+    profile?.display_name ||
+    (user?.user_metadata?.display_name as string | undefined) ||
+    "?";
 
   return (
     <KeyboardAvoidingView
@@ -94,8 +111,8 @@ export default function NewPostModal() {
       {/* Compose alanı */}
       <View className="flex-1 flex-row px-4 pt-3">
         {/* Avatar */}
-        <View className="w-11 h-11 rounded-full bg-zinc-800 items-center justify-center mr-3">
-          <Text className="text-sm font-bold text-zinc-300">{initial}</Text>
+        <View className="mr-3">
+          <Avatar uri={profile?.avatar_url ?? null} fallback={avatarFallback} size={44} />
         </View>
 
         {/* TextInput */}
