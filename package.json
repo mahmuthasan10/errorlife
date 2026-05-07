@@ -11,5 +11,10 @@
     "dev:web": "npm run dev --workspace=web",
     "build:web": "npm run build --workspace=web",
     "lint": "npm run lint --workspace=web"
+  },
+  "dependencies": {
+    "expo": "~55.0.17",
+    "react": "19.2.0",
+    "react-native": "0.83.6"
   }
 }
