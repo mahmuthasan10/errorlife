@@ -1,3 +1,4 @@
+import { useFocusEffect } from "expo-router"; // Veya '@react-navigation/native'
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
@@ -119,9 +120,11 @@ export default function NotificationsScreen() {
     }
   }, [user]);
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     void fetchAll();
-  }, [fetchAll]);
+  }, [fetchAll])
+);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);

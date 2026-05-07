@@ -4,9 +4,24 @@
     "strict": true,
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
+    "types": [
+      "nativewind/types"
+    ],
     "paths": {
-      "@errorlife/shared": ["../packages/shared/src/index.ts"],
-      "@errorlife/shared/*": ["../packages/shared/src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@errorlife/shared": [
+        "../packages/shared/src/index.ts"
+      ],
+      "@errorlife/shared/*": [
+        "../packages/shared/src/*"
+      ]
     }
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ]
 }

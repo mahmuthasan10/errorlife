@@ -10,13 +10,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+
+// Supabase ve Provider yollarını senin orijinal yapına göre tutuyorum
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/AuthProvider";
 import JobCard from "../../src/components/jobs/JobCard";
 import FeedSkeletonList from "../../src/components/feed/FeedSkeletonList";
 import FeedEmptyState from "../../src/components/feed/FeedEmptyState";
 import NewPostsBanner from "../../src/components/feed/NewPostsBanner";
-import type { JobWithAuthor } from "../../src/types/database";
+
+// ÇÖZÜM 1: Doğru Tip Importu (Shared Paketten)
+import type { JobWithAuthor } from "@errorlife/shared/types";
 
 const PAGE_SIZE = 10;
 
@@ -26,12 +30,15 @@ const JOB_SELECT = `
   job_tags(tags(*))
 ` as const;
 
-type StatusFilter = "all" | "open" | "in_progress";
+// ÇÖZÜM 2: Veritabanı ve Arayüz (UI) Durumlarını Birleştirme
+type JobStatus = "open" | "in_progress" | "closed";
+type StatusFilter = JobStatus | "all" | "my_jobs";
 
 const FILTER_TABS: { key: StatusFilter; label: string }[] = [
   { key: "all", label: "Tümü" },
   { key: "open", label: "Açık" },
   { key: "in_progress", label: "Devam Eden" },
+  { key: "my_jobs", label: "Benim İlanlarım" }, // Benim İlanlarım eklendi
 ];
 
 export default function JobsScreen() {
@@ -63,8 +70,13 @@ export default function JobsScreen() {
           .order("created_at", { ascending: false })
           .range(from, to);
 
-        if (filter !== "all") {
-          query = query.eq("status", filter);
+        // ÇÖZÜM 3: Benim İlanlarım Filtre Mantığı
+        if (filter === "my_jobs") {
+          if (user?.id) {
+             query = query.eq("user_id", user.id);
+          }
+        } else if (filter !== "all") {
+          query = query.eq("status", filter as JobStatus);
         }
 
         const { data, error } = await query;
@@ -77,7 +89,8 @@ export default function JobsScreen() {
         setHasMore(more);
         setHasError(false);
         pageRef.current = pageNumber;
-      } catch {
+      } catch (err) {
+        console.error("İlanlar çekilirken hata:", err);
         setHasError(true);
       } finally {
         setIsLoading(false);
@@ -85,7 +98,8 @@ export default function JobsScreen() {
         setIsLoadingMore(false);
       }
     },
-    []
+    // ÇÖZÜM 4: Dependency Array'e user?.id eklendi
+    [user?.id]
   );
 
   // İlk yükleme + filtre değişimi

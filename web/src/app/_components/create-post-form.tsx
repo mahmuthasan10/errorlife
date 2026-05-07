@@ -99,17 +99,25 @@ export default function CreatePostForm() {
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
-        setContent(result.data.optimizedText);
-        setSuggestedTags(result.data.suggestedTags);
+        // AI'dan gelen etiketleri metnin sonuna ekle
+        const newTagsText = result.data.suggestedTags.length > 0 
+          ? '\n\n' + result.data.suggestedTags.map(t => `#${t}`).join(' ') 
+          : '';
+        const newContent = result.data.optimizedText + newTagsText;
+
+        setContent(newContent);
+        
+        // Sadece state olarak değil, input olarak da algılanmasını sağla
+        setSuggestedTags(extractHashtags(newContent));
 
         if (textareaRef.current) {
-          textareaRef.current.value = result.data.optimizedText;
+          textareaRef.current.value = newContent;
           textareaRef.current.style.height = "auto";
           textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
       }
     } catch {
-      setError("AI servisi su anda yanit veremiyor.");
+      setError("AI servisi şu anda yanıt veremiyor.");
     } finally {
       setIsLoadingAI(false);
     }

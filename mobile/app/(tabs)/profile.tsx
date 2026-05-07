@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  RefreshControl,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, TouchableOpacity, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +9,9 @@ import Avatar from "../../src/components/ui/Avatar";
 import PostCard from "../../src/components/feed/PostCard";
 import FeedSkeletonList from "../../src/components/feed/FeedSkeletonList";
 import { usePostInteraction } from "../../src/hooks/usePostInteraction";
-import type { Profile, PostWithAuthor } from "../../src/types/database";
+
+// ÇÖZÜM: Doğru Tipleri Import Etmek
+import type { Profile, PostWithAuthor } from "@errorlife/shared/types";
 
 const POST_SELECT = `
   *,
@@ -29,6 +23,7 @@ const POST_SELECT = `
 
 export default function ProfileScreen() {
   const router = useRouter();
+  // ÇÖZÜM: signOut hatası vermemesi için sadece user'ı al
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -40,31 +35,17 @@ export default function ProfileScreen() {
 
   const { toggleLike, toggleBookmark } = usePostInteraction({ userId, setPosts });
 
-  // ─── Profil + Gönderiler ──────────────────────────────────────────────
   const fetchProfileAndPosts = useCallback(async () => {
     if (!user) return;
-
     try {
-      // Profil bilgisi
       const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
+        .from("profiles").select("*").eq("id", user.id).single();
       if (profileError) throw profileError;
       setProfile(profileData as Profile);
 
-      // Kullanıcının kendi gönderileri
       const { data: postsData, error: postsError } = await supabase
-        .from("posts")
-        .select(POST_SELECT)
-        .eq("user_id", user.id)
-        .eq("user_likes.user_id", user.id)
-        .eq("user_bookmarks.user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
+        .from("posts").select(POST_SELECT).eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(50);
       if (postsError) throw postsError;
       setPosts((postsData as unknown as PostWithAuthor[]) ?? []);
     } catch {
@@ -75,16 +56,14 @@ export default function ProfileScreen() {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchProfileAndPosts();
-  }, [fetchProfileAndPosts]);
+  useEffect(() => { fetchProfileAndPosts(); }, [fetchProfileAndPosts]);
 
-  // ─── Handlers ─────────────────────────────────────────────────────────
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     fetchProfileAndPosts();
   }, [fetchProfileAndPosts]);
 
+  // ÇÖZÜM: Manuel SignOut Fonksiyonu
   const handleSignOut = useCallback(() => {
     Alert.alert("Çıkış Yap", "Hesabından çıkmak istediğine emin misin?", [
       { text: "İptal", style: "cancel" },
@@ -94,140 +73,61 @@ export default function ProfileScreen() {
         onPress: async () => {
           setIsSigningOut(true);
           await supabase.auth.signOut();
+          router.replace('/login');
         },
       },
     ]);
-  }, []);
+  }, [router]);
 
-  const handleComment = useCallback(
-    (postId: string) => router.push(`/post/${postId}/comments`),
-    [router]
-  );
+  const handleComment = useCallback((postId: string) => router.push(`/post/${postId}/comments`), [router]);
+  const handlePostPress = useCallback((postId: string) => router.push(`/post/${postId}/comments`), [router]);
 
-  const handlePostPress = useCallback(
-    (postId: string) => router.push(`/post/${postId}/comments`),
-    [router]
-  );
-
-  const renderItem = useCallback(
-    ({ item }: { item: PostWithAuthor }) => (
-      <PostCard
-        post={item}
-        onLike={toggleLike}
-        onBookmark={toggleBookmark}
-        onComment={handleComment}
-        onPress={handlePostPress}
-      />
-    ),
-    [toggleLike, toggleBookmark, handleComment, handlePostPress]
-  );
+  const renderItem = useCallback(({ item }: { item: PostWithAuthor }) => (
+    <PostCard post={item} onLike={toggleLike} onBookmark={toggleBookmark} onComment={handleComment} onPress={handlePostPress} />
+  ), [toggleLike, toggleBookmark, handleComment, handlePostPress]);
 
   const keyExtractor = useCallback((item: PostWithAuthor) => item.id, []);
 
-  const renderEmpty = useCallback(
-    () => (
-      <View className="items-center py-16 px-6">
-        <Ionicons name="document-outline" size={44} color="#3f3f46" />
-        <Text className="text-zinc-500 text-base mt-4 text-center">
-          Henüz gönderi paylaşmadın.{"\n"}İlk gönderini paylaş!
-        </Text>
-      </View>
-    ),
-    []
-  );
-
-  const renderFooter = useCallback(
-    () => <View className="h-24" />,
-    []
-  );
-
-  // ─── Profil Header ────────────────────────────────────────────────────
   const ProfileHeader = useCallback(() => {
     if (!profile) return null;
-
     const initial = profile.display_name?.charAt(0).toUpperCase() ?? "?";
-    const postCount = posts.length;
-
     return (
       <View className="border-b border-zinc-800 pb-4">
-        {/* Üst alan: Avatar + Düzenle / Çıkış */}
-        <View className="flex-row items-start justify-between px-4 pt-4 mb-4">
-          <Avatar
-            uri={profile.avatar_url}
-            fallback={profile.display_name || initial}
-            size={72}
-          />
-
-          <View className="flex-row gap-2 mt-1">
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push("/edit-profile" as never)}
-              className="border border-zinc-700 rounded-full px-4 py-2"
-              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-            >
+        {profile.cover_url ? (
+          <Image source={{ uri: profile.cover_url }} className="w-full h-32 bg-zinc-800" resizeMode="cover" />
+        ) : (
+          <View className="w-full h-32 bg-zinc-900" />
+        )}
+        <View className="flex-row items-end justify-between px-4 pb-4 -mt-12">
+          <View className="rounded-full border-4 border-black bg-zinc-800 items-center justify-center overflow-hidden" style={{ width: 88, height: 88, borderRadius: 44 }}>
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} className="w-full h-full" />
+            ) : (
+              <Text className="text-white text-3xl font-bold">{initial}</Text>
+            )}
+          </View>
+          <View className="flex-row gap-2 mb-2">
+            <TouchableOpacity onPress={() => router.push("/edit-profile" as never)} className="border border-zinc-700 rounded-full px-4 py-2">
               <Text className="text-white text-[13px] font-semibold">Profili Düzenle</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleSignOut}
-              disabled={isSigningOut}
-              className="border border-zinc-700 rounded-full p-2"
-              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-            >
-              {isSigningOut ? (
-                <ActivityIndicator size="small" color="#71717a" />
-              ) : (
-                <Ionicons name="log-out-outline" size={18} color="#71717a" />
-              )}
+            <TouchableOpacity onPress={handleSignOut} disabled={isSigningOut} className="border border-red-500/30 bg-red-500/10 rounded-full p-2">
+              {isSigningOut ? <ActivityIndicator size="small" color="#ef4444" /> : <Ionicons name="log-out-outline" size={18} color="#ef4444" />}
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* İsim + Kullanıcı adı */}
         <View className="px-4 mb-3">
-          <Text className="text-white text-[20px] font-bold leading-tight">
-            {profile.display_name}
-          </Text>
+          <Text className="text-white text-[20px] font-bold leading-tight">{profile.display_name}</Text>
           <Text className="text-zinc-500 text-[15px] mt-0.5">@{profile.username}</Text>
         </View>
-
-        {/* Bio */}
-        {profile.bio ? (
-          <Text className="text-zinc-300 text-[15px] leading-[22px] px-4 mb-3">
-            {profile.bio}
-          </Text>
-        ) : null}
-
-        {/* İstatistikler */}
-        <View className="flex-row gap-4 px-4">
-          <View className="flex-row items-center gap-1">
-            <Text className="text-white font-bold text-[15px]">{postCount}</Text>
-            <Text className="text-zinc-500 text-[14px]">Gönderi</Text>
-          </View>
-        </View>
+        {profile.bio && <Text className="text-zinc-300 text-[15px] leading-[22px] px-4 mb-3">{profile.bio}</Text>}
       </View>
     );
-  }, [profile, posts.length, isSigningOut, handleSignOut, router]);
+  }, [profile, isSigningOut, handleSignOut, router]);
 
-  // ─── Yükleniyor ───────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
-        <View className="border-b border-zinc-800 px-4 py-3">
-          <Text className="text-white text-xl font-bold">Profil</Text>
-        </View>
-        {/* Profil Header Skeleton */}
-        <View className="px-4 pt-4 pb-6 border-b border-zinc-800">
-          <View className="flex-row items-start justify-between mb-4">
-            <View className="w-[72px] h-[72px] rounded-full bg-zinc-800" />
-            <View className="w-32 h-9 rounded-full bg-zinc-800 mt-1" />
-          </View>
-          <View className="w-40 h-5 bg-zinc-800 rounded-md mb-2" />
-          <View className="w-24 h-4 bg-zinc-800 rounded-md mb-3" />
-          <View className="w-full h-4 bg-zinc-800 rounded-md mb-1.5" />
-          <View className="w-3/4 h-4 bg-zinc-800 rounded-md" />
-        </View>
+        <View className="border-b border-zinc-800 px-4 py-3"><Text className="text-white text-xl font-bold">Profil</Text></View>
         <FeedSkeletonList count={4} />
       </SafeAreaView>
     );
@@ -236,25 +136,9 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
       <FlatList
-        data={posts}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
+        data={posts} renderItem={renderItem} keyExtractor={keyExtractor}
         ListHeaderComponent={ProfileHeader}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor="#1D9BF0"
-            colors={["#1D9BF0"]}
-            progressBackgroundColor="#18181b"
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews
-        maxToRenderPerBatch={10}
-        windowSize={5}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#1D9BF0" />}
       />
     </SafeAreaView>
   );
