@@ -95,3 +95,6 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+// export const unstable_settings = {
+//   initialRouteName: "(auth)/login",
+// };
