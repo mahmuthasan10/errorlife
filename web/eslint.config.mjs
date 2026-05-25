@@ -16,3 +16,4 @@ const eslintConfig = defineConfig([
 ]);
 
 export default eslintConfig;
+//tamam mobil açılıoyr keşfettiğim hatalar ai özelliğinin çalışmaması bilidirmler kısmında biri gönderini beğendi diyordu ama yorumları açıyordu oralarda falan düzeltme yapılması lazım bir de sen kendinde kontroller yapmalısın tabi önce bu mu web deployu düzeltmek mi o da var plan yapmanı istiyorum 

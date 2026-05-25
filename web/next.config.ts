@@ -1,5 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import path from "path";
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  transpilePackages: ["@errorlife/shared"],
+  outputFileTracingRoot: path.join(__dirname, "../"),
   eslint: {
     ignoreDuringBuilds: true,
   },

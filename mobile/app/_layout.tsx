@@ -38,6 +38,10 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="post/[id]/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="post/[id]/comments"
           options={{
             presentation: "formSheet",
@@ -47,7 +51,7 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
-          name="messages/[chatId]"
+          name="messages"
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -69,7 +73,7 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
-          name="jobs/[id]"
+          name="jobs/[id]/index"
           options={{ headerShown: false }}
         />
       </Stack>

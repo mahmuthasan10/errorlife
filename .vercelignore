@@ -1,0 +1,7 @@
+mobile/
+**/.expo/
+**/android/
+**/ios/
+*.apk
+*.ipa
+.claude/

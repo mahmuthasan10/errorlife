@@ -155,7 +155,11 @@ export default function NotificationsScreen() {
           )
         );
       }
-      router.push(`/post/${row.post_id}/comments`);
+      if (row.kind === "like") {
+        router.push(`/post/${row.post_id}`);
+      } else {
+        router.push(`/post/${row.post_id}/comments`);
+      }
     },
     [router]
   );
