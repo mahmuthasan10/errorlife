@@ -108,7 +108,11 @@ export default function PostDetailScreen() {
 
       <ScrollView className="flex-1">
         <View className="px-4 py-3 border-b border-zinc-800">
-          <View className="flex-row items-center">
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push(`/profile/${post.profiles.username}`)}
+            className="flex-row items-center"
+          >
             <Avatar
               uri={post.profiles.avatar_url}
               fallback={post.profiles.display_name}
@@ -121,7 +125,7 @@ export default function PostDetailScreen() {
                 @{post.profiles.username}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <Text className="text-zinc-100 text-[17px] leading-[24px] mt-3">
             {post.content}

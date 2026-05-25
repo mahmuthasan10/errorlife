@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../src/lib/supabase";
@@ -41,7 +43,6 @@ const STATUS_CONFIG = {
   },
 } as const;
 
-// Profiles join → expert_id foreign key
 const BID_SELECT = `
   *,
   profiles!bids_expert_id_fkey(*)
@@ -53,13 +54,13 @@ const JOB_SELECT = `
   job_tags(tags(*))
 ` as const;
 
-// ─── Bid Row Bileşeni ─────────────────────────────────────────────────────────
-
 const BID_STATUS_MAP = {
-  pending: { label: "Bekliyor", color: "text-zinc-400" },
+  pending:  { label: "Bekliyor",    color: "text-zinc-400" },
   accepted: { label: "Kabul Edildi", color: "text-emerald-400" },
-  rejected: { label: "Reddedildi", color: "text-red-400" },
+  rejected: { label: "Reddedildi",  color: "text-red-400" },
 } as const;
+
+// ─── Bid Row ──────────────────────────────────────────────────────────────────
 
 function BidRow({
   bid,
@@ -83,7 +84,6 @@ function BidRow({
           size={36}
         />
         <View className="flex-1 ml-3">
-          {/* İsim + tarih */}
           <View className="flex-row items-center justify-between mb-1">
             <View className="flex-row items-center gap-1.5 flex-1 mr-2">
               <Text className="text-white font-semibold text-[14px]" numberOfLines={1}>
@@ -94,7 +94,6 @@ function BidRow({
             <Text className="text-zinc-500 text-xs">{formatTimeAgo(bid.created_at)}</Text>
           </View>
 
-          {/* Tutar + süre + durum */}
           <View className="flex-row items-center gap-2 mb-2 flex-wrap">
             <View className="flex-row items-center gap-1">
               <Ionicons name="cash-outline" size={13} color="#22c55e" />
@@ -111,12 +110,10 @@ function BidRow({
             <Text className={`text-[12px] ${bidStatus.color}`}>{bidStatus.label}</Text>
           </View>
 
-          {/* Kapak yazısı */}
           <Text className="text-zinc-400 text-[13px] leading-[19px]" numberOfLines={4}>
             {bid.cover_letter}
           </Text>
 
-          {/* Kabul / Reddet — sadece ilan sahibi + bekleyen teklifler */}
           {isOwner && bid.status === "pending" && (
             <View className="flex-row gap-2 mt-3">
               <TouchableOpacity
@@ -145,13 +142,155 @@ function BidRow({
   );
 }
 
+// ─── Teklif Formu Modal ───────────────────────────────────────────────────────
+// Modal olarak açılır → FlatList header'ından tamamen bağımsız,
+// keyboard handling her platformda güvenilir çalışır.
+
+interface BidFormModalProps {
+  visible: boolean;
+  isSubmitting: boolean;
+  bidAmount: string;
+  bidDays: string;
+  bidCoverLetter: string;
+  daysRef: React.RefObject<TextInput | null>;
+  coverRef: React.RefObject<TextInput | null>;
+  onBidAmountChange: (v: string) => void;
+  onBidDaysChange: (v: string) => void;
+  onBidCoverLetterChange: (v: string) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}
+
+function BidFormModal({
+  visible,
+  isSubmitting,
+  bidAmount,
+  bidDays,
+  bidCoverLetter,
+  daysRef,
+  coverRef,
+  onBidAmountChange,
+  onBidDaysChange,
+  onBidCoverLetterChange,
+  onSubmit,
+  onClose,
+}: BidFormModalProps) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, backgroundColor: "#09090b" }}
+      >
+        <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
+          {/* Modal Header */}
+          <View className="flex-row items-center px-4 py-3 border-b border-zinc-800">
+            <Text className="text-white font-bold text-[17px] flex-1">Teklif Ver</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center"
+            >
+              <Ionicons name="close" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            className="flex-1 px-4 py-4"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Tutar */}
+            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
+              Teklif Tutarı (₺) *
+            </Text>
+            <View className="flex-row items-center bg-zinc-900 rounded-xl border border-zinc-800 px-4 mb-4">
+              <Ionicons name="cash-outline" size={16} color="#52525b" />
+              <TextInput
+                className="flex-1 text-white text-[15px] py-3 ml-2"
+                placeholder="0"
+                placeholderTextColor="#52525b"
+                value={bidAmount}
+                onChangeText={onBidAmountChange}
+                keyboardType="numeric"
+                returnKeyType="next"
+                onSubmitEditing={() => daysRef.current?.focus()}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            {/* Tahmini süre */}
+            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
+              Tahmini Süre (Gün) *
+            </Text>
+            <View className="flex-row items-center bg-zinc-900 rounded-xl border border-zinc-800 px-4 mb-4">
+              <Ionicons name="time-outline" size={16} color="#52525b" />
+              <TextInput
+                ref={daysRef}
+                className="flex-1 text-white text-[15px] py-3 ml-2"
+                placeholder="7"
+                placeholderTextColor="#52525b"
+                value={bidDays}
+                onChangeText={onBidDaysChange}
+                keyboardType="numeric"
+                returnKeyType="next"
+                onSubmitEditing={() => coverRef.current?.focus()}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            {/* Kapak yazısı */}
+            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
+              Kapak Yazısı * (en az 10 karakter)
+            </Text>
+            <TextInput
+              ref={coverRef}
+              className="bg-zinc-900 text-white text-[15px] rounded-xl px-4 py-3 border border-zinc-800 min-h-[120px] mb-6"
+              placeholder="Neden sen uygun adaysın? Deneyimlerini, yaklaşımını anlat..."
+              placeholderTextColor="#52525b"
+              value={bidCoverLetter}
+              onChangeText={onBidCoverLetterChange}
+              maxLength={2000}
+              multiline
+              textAlignVertical="top"
+              editable={!isSubmitting}
+            />
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onSubmit}
+              disabled={isSubmitting}
+              className={`rounded-xl py-4 items-center ${
+                isSubmitting ? "bg-[#1D9BF0]/40" : "bg-[#1D9BF0]"
+              }`}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text className="text-white font-bold text-[15px]">Teklif Gönder</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Scroll için alt boşluk */}
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 // ─── Ana Ekran ────────────────────────────────────────────────────────────────
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
 
   const [job, setJob] = useState<JobWithAuthor | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
@@ -159,7 +298,7 @@ export default function JobDetailScreen() {
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // Teklif formu
+  // Teklif formu state'i — artık Modal içinde, JobHeader'dan bağımsız
   const [bidAmount, setBidAmount] = useState("");
   const [bidDays, setBidDays] = useState("");
   const [bidCoverLetter, setBidCoverLetter] = useState("");
@@ -171,7 +310,19 @@ export default function JobDetailScreen() {
   const isOwner = user?.id === job?.user_id;
   const hasBid = bids.some((b) => b.expert_id === user?.id);
 
-  // ─── Veri Yükleme ──────────────────────────────────────────────────────
+  // ─── Stable callbacks (Modal'a prop olarak geçer) ──────────────────
+  const handleBidAmountChange = useCallback(
+    (t: string) => setBidAmount(t.replace(/[^0-9]/g, "")),
+    []
+  );
+  const handleBidDaysChange = useCallback(
+    (t: string) => setBidDays(t.replace(/[^0-9]/g, "")),
+    []
+  );
+  const handleOpenBidForm  = useCallback(() => setShowBidForm(true), []);
+  const handleCloseBidForm = useCallback(() => setShowBidForm(false), []);
+
+  // ─── Veri Yükleme ──────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
 
@@ -203,10 +354,10 @@ export default function JobDetailScreen() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, [id, router]);
 
-  // ─── Real-Time ─────────────────────────────────────────────────────────
+  // ─── Real-Time ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
 
@@ -214,35 +365,22 @@ export default function JobDetailScreen() {
       .channel(`job-detail:${id}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "jobs",
-          filter: `id=eq.${id}`,
-        },
+        { event: "UPDATE", schema: "public", table: "jobs", filter: `id=eq.${id}` },
         (payload) => {
           setJob((prev) =>
-            prev
-              ? { ...prev, ...(payload.new as Partial<JobWithAuthor>) }
-              : prev
+            prev ? { ...prev, ...(payload.new as Partial<JobWithAuthor>) } : prev
           );
         }
       )
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "bids",
-          filter: `job_id=eq.${id}`,
-        },
+        { event: "INSERT", schema: "public", table: "bids", filter: `job_id=eq.${id}` },
         async (payload) => {
           const { data } = await supabase
             .from("bids")
             .select(BID_SELECT)
             .eq("id", payload.new.id)
             .single();
-
           if (data) {
             setBids((prev) => [data as unknown as Bid, ...prev]);
           }
@@ -250,12 +388,7 @@ export default function JobDetailScreen() {
       )
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "bids",
-          filter: `job_id=eq.${id}`,
-        },
+        { event: "UPDATE", schema: "public", table: "bids", filter: `job_id=eq.${id}` },
         (payload) => {
           setBids((prev) =>
             prev.map((b) =>
@@ -268,13 +401,11 @@ export default function JobDetailScreen() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [id]);
 
-  // ─── Teklif Gönder (RPC) ───────────────────────────────────────────────
-  const handleSubmitBid = async () => {
+  // ─── Teklif Gönder ─────────────────────────────────────────────────
+  const handleSubmitBid = useCallback(async () => {
     if (!user || !id || isSubmittingBid) return;
 
     const amount = parseFloat(bidAmount.trim());
@@ -317,9 +448,9 @@ export default function JobDetailScreen() {
     } finally {
       setIsSubmittingBid(false);
     }
-  };
+  }, [user, id, isSubmittingBid, bidAmount, bidDays, bidCoverLetter]);
 
-  // ─── Teklif Kabul (RPC) ────────────────────────────────────────────────
+  // ─── Teklif Kabul ──────────────────────────────────────────────────
   const handleAcceptBid = useCallback(
     (bidId: string) => {
       if (!user || !isOwner || !id) return;
@@ -340,8 +471,7 @@ export default function JobDetailScreen() {
                 });
                 if (error) throw error;
               } catch (err: unknown) {
-                const msg =
-                  err instanceof Error ? err.message : "İşlem sırasında bir sorun oluştu.";
+                const msg = err instanceof Error ? err.message : "İşlem sırasında bir sorun oluştu.";
                 Alert.alert("Hata", msg);
               } finally {
                 setIsUpdatingStatus(false);
@@ -354,7 +484,7 @@ export default function JobDetailScreen() {
     [user, isOwner, id]
   );
 
-  // ─── Teklif Reddet (RPC) ──────────────────────────────────────────────
+  // ─── Teklif Reddet ─────────────────────────────────────────────────
   const handleRejectBid = useCallback(
     async (bidId: string) => {
       if (!user || !isOwner || !id) return;
@@ -367,8 +497,7 @@ export default function JobDetailScreen() {
         });
         if (error) throw error;
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Teklif reddedilemedi.";
+        const msg = err instanceof Error ? err.message : "Teklif reddedilemedi.";
         Alert.alert("Hata", msg);
       } finally {
         setIsUpdatingStatus(false);
@@ -377,7 +506,7 @@ export default function JobDetailScreen() {
     [user, isOwner, id]
   );
 
-  // ─── İlan Kapat (RPC) ─────────────────────────────────────────────────
+  // ─── İlan Kapat ────────────────────────────────────────────────────
   const handleCloseJob = useCallback(() => {
     if (!id) return;
 
@@ -395,8 +524,7 @@ export default function JobDetailScreen() {
             });
             if (error) throw error;
           } catch (err: unknown) {
-            const msg =
-              err instanceof Error ? err.message : "Durum güncellenemedi.";
+            const msg = err instanceof Error ? err.message : "Durum güncellenemedi.";
             Alert.alert("Hata", msg);
           } finally {
             setIsUpdatingStatus(false);
@@ -406,7 +534,7 @@ export default function JobDetailScreen() {
     ]);
   }, [id]);
 
-  // ─── Render ────────────────────────────────────────────────────────────
+  // ─── FlatList render helpers ───────────────────────────────────────
   const renderBid = useCallback(
     ({ item }: { item: Bid }) => (
       <BidRow
@@ -421,7 +549,9 @@ export default function JobDetailScreen() {
 
   const keyExtractor = useCallback((item: Bid) => item.id, []);
 
-  // ─── Job Header (FlatList ListHeaderComponent) ─────────────────────────
+  // ─── Job Header (form YOK — form artık Modal'da) ───────────────────
+  // Deps listesinde bidAmount/bidDays/bidCoverLetter/isSubmittingBid yok,
+  // bu yüzden klavye yazarken bu callback DEĞİŞMİYOR → FlatList remount yapmaz.
   const JobHeader = useCallback(() => {
     if (!job) return null;
 
@@ -433,13 +563,8 @@ export default function JobDetailScreen() {
       <View>
         {/* İlan detayı */}
         <View className="px-4 pt-4 pb-5 border-b border-zinc-800">
-          {/* Yazar */}
           <View className="flex-row items-center mb-4">
-            <Avatar
-              uri={profiles.avatar_url}
-              fallback={profiles.display_name}
-              size={40}
-            />
+            <Avatar uri={profiles.avatar_url} fallback={profiles.display_name} size={40} />
             <View className="flex-1 ml-3">
               <Text className="text-white font-semibold text-[14px]">
                 {profiles.display_name}
@@ -448,8 +573,6 @@ export default function JobDetailScreen() {
                 @{profiles.username} · {formatTimeAgo(job.created_at)}
               </Text>
             </View>
-
-            {/* Durum badge */}
             <View className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${status.bg}`}>
               <View className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
               <Text className={`text-[12px] font-semibold ${status.color}`}>
@@ -458,17 +581,14 @@ export default function JobDetailScreen() {
             </View>
           </View>
 
-          {/* Başlık */}
           <Text className="text-white text-[20px] font-bold leading-[26px] mb-2.5">
             {job.title}
           </Text>
 
-          {/* Açıklama */}
           <Text className="text-zinc-300 text-[15px] leading-[23px] mb-4">
             {job.description}
           </Text>
 
-          {/* Etiketler */}
           {job.job_tags.length > 0 && (
             <View className="flex-row flex-wrap gap-2 mb-4">
               {job.job_tags.map(({ tags }) => (
@@ -479,7 +599,6 @@ export default function JobDetailScreen() {
             </View>
           )}
 
-          {/* Bütçe */}
           {job.budget != null && (
             <View className="flex-row items-center gap-2 bg-zinc-900 rounded-xl px-4 py-3 mb-4">
               <Ionicons name="cash-outline" size={18} color="#22c55e" />
@@ -490,7 +609,6 @@ export default function JobDetailScreen() {
             </View>
           )}
 
-          {/* İlan sahibi: Kapat */}
           {isOwner && job.status !== "closed" && (
             <TouchableOpacity
               activeOpacity={0.7}
@@ -510,7 +628,7 @@ export default function JobDetailScreen() {
           )}
         </View>
 
-        {/* Teklifler başlığı */}
+        {/* Teklifler başlığı + "Teklif Ver" butonu */}
         <View className="flex-row items-center justify-between px-4 py-3 border-b border-zinc-800">
           <Text className="text-white font-bold text-[16px]">
             Teklifler
@@ -519,17 +637,14 @@ export default function JobDetailScreen() {
             )}
           </Text>
 
-          {/* Teklif ver — sadece başkasının ilanı, açık ve teklif verilmemiş */}
           {!isOwner && job.status === "open" && !hasBid && (
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setShowBidForm((v) => !v)}
+              onPress={handleOpenBidForm}
               className="bg-[#1D9BF0] rounded-full px-4 py-2"
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
-              <Text className="text-white font-semibold text-[13px]">
-                {showBidForm ? "Vazgeç" : "Teklif Ver"}
-              </Text>
+              <Text className="text-white font-semibold text-[13px]">Teklif Ver</Text>
             </TouchableOpacity>
           )}
 
@@ -540,98 +655,9 @@ export default function JobDetailScreen() {
             </View>
           )}
         </View>
-
-        {/* Teklif formu */}
-        {showBidForm && !isOwner && (
-          <View className="px-4 py-4 border-b border-zinc-800 bg-zinc-900/40">
-            {/* Tutar */}
-            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
-              Teklif Tutarı (₺) *
-            </Text>
-            <View className="flex-row items-center bg-zinc-900 rounded-xl border border-zinc-800 px-4 mb-3">
-              <Ionicons name="cash-outline" size={16} color="#52525b" />
-              <TextInput
-                className="flex-1 text-white text-[15px] py-3 ml-2"
-                placeholder="0"
-                placeholderTextColor="#52525b"
-                value={bidAmount}
-                onChangeText={(t) => setBidAmount(t.replace(/[^0-9]/g, ""))}
-                keyboardType="numeric"
-                returnKeyType="next"
-                onSubmitEditing={() => daysRef.current?.focus()}
-                editable={!isSubmittingBid}
-              />
-            </View>
-
-            {/* Tahmini süre */}
-            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
-              Tahmini Süre (Gün) *
-            </Text>
-            <View className="flex-row items-center bg-zinc-900 rounded-xl border border-zinc-800 px-4 mb-3">
-              <Ionicons name="time-outline" size={16} color="#52525b" />
-              <TextInput
-                ref={daysRef}
-                className="flex-1 text-white text-[15px] py-3 ml-2"
-                placeholder="7"
-                placeholderTextColor="#52525b"
-                value={bidDays}
-                onChangeText={(t) => setBidDays(t.replace(/[^0-9]/g, ""))}
-                keyboardType="numeric"
-                returnKeyType="next"
-                onSubmitEditing={() => coverRef.current?.focus()}
-                editable={!isSubmittingBid}
-              />
-            </View>
-
-            {/* Kapak yazısı */}
-            <Text className="text-zinc-400 text-xs font-semibold mb-2 uppercase tracking-wider">
-              Kapak Yazısı * (en az 10 karakter)
-            </Text>
-            <TextInput
-              ref={coverRef}
-              className="bg-zinc-900 text-white text-[15px] rounded-xl px-4 py-3 border border-zinc-800 min-h-[100px] mb-4"
-              placeholder="Neden sen uygun adaysın? Deneyimlerini, yaklaşımını anlat..."
-              placeholderTextColor="#52525b"
-              value={bidCoverLetter}
-              onChangeText={setBidCoverLetter}
-              maxLength={2000}
-              multiline
-              textAlignVertical="top"
-              editable={!isSubmittingBid}
-            />
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleSubmitBid}
-              disabled={isSubmittingBid}
-              className={`rounded-xl py-3.5 items-center ${
-                isSubmittingBid ? "bg-[#1D9BF0]/40" : "bg-[#1D9BF0]"
-              }`}
-            >
-              {isSubmittingBid ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text className="text-white font-bold text-[15px]">Teklif Gönder</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
-  }, [
-    job,
-    isOwner,
-    bids.length,
-    hasBid,
-    showBidForm,
-    bidAmount,
-    bidDays,
-    bidCoverLetter,
-    isSubmittingBid,
-    isUpdatingStatus,
-    handleCloseJob,
-    handleSubmitBid,
-  ]);
+  }, [job, isOwner, bids.length, hasBid, isUpdatingStatus, handleCloseJob, handleOpenBidForm]);
 
   const renderEmpty = useCallback(
     () => (
@@ -645,7 +671,7 @@ export default function JobDetailScreen() {
     []
   );
 
-  // ─── Yükleniyor ────────────────────────────────────────────────────────
+  // ─── Yükleniyor ────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
@@ -668,44 +694,54 @@ export default function JobDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-black"
-      keyboardVerticalOffset={insets.bottom}
-    >
-      <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
-        {/* Header */}
-        <View className="flex-row items-center px-4 py-3 border-b border-zinc-800">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            className="mr-3"
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text
-            className="text-white font-bold text-[17px] flex-1"
-            numberOfLines={1}
-          >
-            {job?.title ?? "İlan Detayı"}
-          </Text>
-        </View>
+    <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
+      {/* Header */}
+      <View className="flex-row items-center px-4 py-3 border-b border-zinc-800">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className="mr-3"
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text
+          className="text-white font-bold text-[17px] flex-1"
+          numberOfLines={1}
+        >
+          {job?.title ?? "İlan Detayı"}
+        </Text>
+      </View>
 
-        <FlatList
-          data={bids}
-          renderItem={renderBid}
-          keyExtractor={keyExtractor}
-          ListHeaderComponent={JobHeader}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={<View style={{ height: 40 }} />}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          removeClippedSubviews
-          maxToRenderPerBatch={15}
-          windowSize={5}
-        />
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+      <FlatList
+        data={bids}
+        renderItem={renderBid}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={JobHeader}
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={<View style={{ height: 40 }} />}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        removeClippedSubviews
+        maxToRenderPerBatch={15}
+        windowSize={5}
+      />
+
+      {/* Teklif Formu Modal — FlatList'ten bağımsız, keyboard-safe */}
+      <BidFormModal
+        visible={showBidForm}
+        isSubmitting={isSubmittingBid}
+        bidAmount={bidAmount}
+        bidDays={bidDays}
+        bidCoverLetter={bidCoverLetter}
+        daysRef={daysRef}
+        coverRef={coverRef}
+        onBidAmountChange={handleBidAmountChange}
+        onBidDaysChange={handleBidDaysChange}
+        onBidCoverLetterChange={setBidCoverLetter}
+        onSubmit={handleSubmitBid}
+        onClose={handleCloseBidForm}
+      />
+    </SafeAreaView>
   );
 }

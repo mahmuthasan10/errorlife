@@ -4,6 +4,7 @@ import {
   fetchInteractionNotifications,
   fetchFollowNotifications,
   fetchMessageNotifications,
+  fetchJobNotifications,
 } from "../../lib/queries/notifications";
 
 export const notificationKeys = {
@@ -11,6 +12,7 @@ export const notificationKeys = {
   interactions: (userId: string) => ["notifications", userId, "interactions"] as const,
   follows:      (userId: string) => ["notifications", userId, "follows"] as const,
   messages:     (userId: string) => ["notifications", userId, "messages"] as const,
+  jobs:         (userId: string) => ["notifications", userId, "jobs"] as const,
 };
 
 export function useInteractionNotifications() {
@@ -40,5 +42,15 @@ export function useMessageNotifications() {
     queryFn:   fetchMessageNotifications,
     enabled:   !!user,
     staleTime: 15_000,
+  });
+}
+
+export function useJobNotifications() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey:  notificationKeys.jobs(user?.id ?? ""),
+    queryFn:   fetchJobNotifications,
+    enabled:   !!user,
+    staleTime: 30_000,
   });
 }

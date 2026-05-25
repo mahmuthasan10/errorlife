@@ -58,6 +58,11 @@ export default function FeedScreen() {
     [router]
   );
 
+  const handleProfilePress = useCallback(
+    (username: string) => router.push(`/profile/${username}`),
+    [router]
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: PostWithAuthor }) => (
       <PostCard
@@ -66,9 +71,10 @@ export default function FeedScreen() {
         onBookmark={toggleBookmark}
         onComment={handleComment}
         onPress={handlePostPress}
+        onProfilePress={handleProfilePress}
       />
     ),
-    [toggleLike, toggleBookmark, handleComment, handlePostPress]
+    [toggleLike, toggleBookmark, handleComment, handlePostPress, handleProfilePress]
   );
 
   const keyExtractor = useCallback((item: PostWithAuthor) => item.id, []);
@@ -94,8 +100,15 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-black" edges={["top"]}>
-      <View className="border-b border-zinc-800 px-4 py-3 z-10 bg-black">
+      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3 z-10 bg-black">
         <Text className="text-white text-xl font-bold">ErrorLife</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/search")}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="search-outline" size={22} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <View className="flex-1 relative">

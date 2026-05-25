@@ -5,12 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Alert,
-  Keyboard,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../src/lib/supabase";
@@ -29,7 +27,6 @@ export default function CommentsModal() {
   const [isSending, setIsSending] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
-  const listRef = useRef<FlatList>(null);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -37,7 +34,7 @@ export default function CommentsModal() {
         .from("comments")
         .select("*, profiles!comments_user_id_fkey(*)")
         .eq("post_id", postId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -52,18 +49,6 @@ export default function CommentsModal() {
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
-
-  // Klavye açılınca listeyi alta kaydır
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => {
-      if (comments.length > 0) {
-        setTimeout(() => {
-          listRef.current?.scrollToEnd({ animated: true });
-        }, 150);
-      }
-    });
-    return () => showSub.remove();
-  }, [comments.length]);
 
   const handleSend = async () => {
     const trimmed = newComment.trim();
@@ -97,12 +82,8 @@ export default function CommentsModal() {
       },
     };
 
-    setComments((prev) => [...prev, optimisticComment]);
+    setComments((prev) => [optimisticComment, ...prev]);
     setNewComment("");
-
-    setTimeout(() => {
-      listRef.current?.scrollToEnd({ animated: true });
-    }, 100);
 
     try {
       const { data, error } = await supabase
@@ -183,12 +164,7 @@ export default function CommentsModal() {
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-black"
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
-      {/* Header */}
+    <SafeAreaView edges={["top"]} className="flex-1 bg-black">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-zinc-800">
         <Text className="text-white text-lg font-bold">Yorumlar</Text>
         <TouchableOpacity
@@ -200,38 +176,7 @@ export default function CommentsModal() {
         </TouchableOpacity>
       </View>
 
-      {/* Yorum Listesi */}
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1D9BF0" />
-        </View>
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={comments}
-          renderItem={renderComment}
-          keyExtractor={keyExtractor}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={
-            comments.length === 0
-              ? { flex: 1, justifyContent: "center", alignItems: "center" }
-              : { paddingVertical: 16 }
-          }
-          ListEmptyComponent={
-            <View className="items-center">
-              <Ionicons name="chatbubble-outline" size={40} color="#3f3f46" />
-              <Text className="text-zinc-500 text-sm mt-3">
-                Henüz yorum yok. İlk yorumu sen yaz!
-              </Text>
-            </View>
-          }
-        />
-      )}
-
-      {/* Yorum Yazma Alanı */}
-      <View className="flex-row items-end px-4 py-3 border-t border-zinc-800 gap-3">
+      <View className="flex-row items-end px-4 py-3 border-b border-zinc-800 gap-3">
         <TextInput
           ref={inputRef}
           className="flex-1 bg-zinc-900 text-white rounded-2xl px-4 py-2.5 text-[14px] border border-zinc-800 max-h-32"
@@ -262,6 +207,34 @@ export default function CommentsModal() {
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#1D9BF0" />
+        </View>
+      ) : (
+        <FlatList
+          data={comments}
+          renderItem={renderComment}
+          keyExtractor={keyExtractor}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={
+            comments.length === 0
+              ? { flex: 1, justifyContent: "center", alignItems: "center" }
+              : { paddingVertical: 16 }
+          }
+          ListEmptyComponent={
+            <View className="items-center">
+              <Ionicons name="chatbubble-outline" size={40} color="#3f3f46" />
+              <Text className="text-zinc-500 text-sm mt-3">
+                Henüz yorum yok. İlk yorumu sen yaz!
+              </Text>
+            </View>
+          }
+        />
+      )}
+    </SafeAreaView>
   );
 }

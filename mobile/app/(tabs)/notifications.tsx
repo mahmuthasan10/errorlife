@@ -18,25 +18,29 @@ import {
   useInteractionNotifications,
   useFollowNotifications,
   useMessageNotifications,
+  useJobNotifications,
   notificationKeys,
 } from "../../src/hooks/queries/useNotifications";
 import {
   useMarkInteractionRead,
   useMarkFollowRead,
+  useMarkJobRead,
 } from "../../src/hooks/mutations/useMarkNotificationRead";
 import { logger } from "../../src/lib/logger";
 import type {
   InteractionNotificationRow,
   FollowNotificationRow,
   MessageNotificationRow,
+  JobNotificationRow,
 } from "@errorlife/shared/types";
 
-type Tab = "interactions" | "follows" | "messages";
+type Tab = "interactions" | "follows" | "messages" | "jobs";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "interactions", label: "Etkileşimler" },
   { key: "follows",      label: "Takipler" },
   { key: "messages",     label: "Mesajlar" },
+  { key: "jobs",         label: "İlanlar" },
 ];
 
 // Beğeni → post detay, yorum → comments — whitelist ile güvenli routing
@@ -94,10 +98,17 @@ export default function NotificationsScreen() {
     refetch: refetchM,
   } = useMessageNotifications();
 
+  const {
+    data: jobs = [],
+    isLoading: iLoadingJ,
+    refetch: refetchJ,
+  } = useJobNotifications();
+
   const { mutate: markInteractionRead } = useMarkInteractionRead();
   const { mutate: markFollowRead }      = useMarkFollowRead();
+  const { mutate: markJobRead }         = useMarkJobRead();
 
-  const isLoading = iLoadingI || iLoadingF || iLoadingM;
+  const isLoading = iLoadingI || iLoadingF || iLoadingM || iLoadingJ;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Ekrana her odaklanıldığında stale olan verileri invalidate et
@@ -110,9 +121,9 @@ export default function NotificationsScreen() {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await Promise.all([refetchI(), refetchF(), refetchM()]);
+    await Promise.all([refetchI(), refetchF(), refetchM(), refetchJ()]);
     setIsRefreshing(false);
-  }, [refetchI, refetchF, refetchM]);
+  }, [refetchI, refetchF, refetchM, refetchJ]);
 
   const handleInteractionPress = useCallback(
     (row: InteractionNotificationRow) => {
@@ -144,11 +155,26 @@ export default function NotificationsScreen() {
     [markFollowRead]
   );
 
+  const handleJobPress = useCallback(
+    (row: JobNotificationRow) => {
+      if (!row.is_read) {
+        markJobRead(row);
+      }
+      if (row.job_id) {
+        router.push(`/jobs/${row.job_id}`);
+      } else {
+        logger.warn("notifications.job.missing_job_id", { row: row as unknown as Record<string, unknown> });
+      }
+    },
+    [router, markJobRead]
+  );
+
   // ─── Badge sayıları ────────────────────────────────────────
   const badgeMap: Record<Tab, number> = {
     interactions: interactions.filter((r) => !r.is_read).length,
     follows:      follows.filter((r) => !r.is_read).length,
     messages:     messages.reduce((s, r) => s + r.unread_count, 0),
+    jobs:         jobs.filter((r) => !r.is_read).length,
   };
 
   // ─── Render fonksiyonları ──────────────────────────────────
@@ -211,6 +237,52 @@ export default function NotificationsScreen() {
       {!item.is_read && <View className="w-2 h-2 mt-2 rounded-full bg-blue-500" />}
     </TouchableOpacity>
   );
+
+  const renderJob = ({ item }: { item: JobNotificationRow }) => {
+    let iconName: "briefcase" | "checkmark-circle" | "close-circle" = "briefcase";
+    let iconColor = "#06b6d4";
+    let actionText = "ilanına teklif verdi.";
+
+    if (item.type === "BID_ACCEPTED") {
+      iconName = "checkmark-circle";
+      iconColor = "#22c55e";
+      actionText = "teklifini kabul etti.";
+    } else if (item.type === "BID_REJECTED") {
+      iconName = "close-circle";
+      iconColor = "#f87171";
+      actionText = "teklifini reddetti.";
+    }
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleJobPress(item)}
+        activeOpacity={0.7}
+        className={`flex-row items-start gap-3 px-4 py-3 border-b border-zinc-800 ${
+          !item.is_read ? "bg-blue-500/10" : ""
+        }`}
+      >
+        <View>
+          <Avatar uri={item.actor_avatar_url} fallback={item.actor_display_name} />
+          <View className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black items-center justify-center">
+            <Ionicons name={iconName} size={12} color={iconColor} />
+          </View>
+        </View>
+        <View className="flex-1">
+          <Text className="text-white text-sm">
+            <Text className="font-bold">{item.actor_display_name}</Text>{" "}
+            {actionText}
+          </Text>
+          {item.job_title && (
+            <Text numberOfLines={1} className="text-zinc-400 text-sm mt-0.5">
+              “{item.job_title}”
+            </Text>
+          )}
+          <Text className="text-zinc-500 text-xs mt-0.5">{timeAgo(item.created_at)}</Text>
+        </View>
+        {!item.is_read && <View className="w-2 h-2 mt-2 rounded-full bg-blue-500" />}
+      </TouchableOpacity>
+    );
+  };
 
   const renderMessage = ({ item }: { item: MessageNotificationRow }) => {
     const hasUnread = item.unread_count > 0;
@@ -310,6 +382,25 @@ export default function NotificationsScreen() {
             data={messages}
             keyExtractor={(r) => r.chat_id}
             renderItem={renderMessage}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                tintColor="#1D9BF0"
+                colors={["#1D9BF0"]}
+                progressBackgroundColor="#18181b"
+              />
+            }
+          />
+        );
+      case "jobs":
+        return jobs.length === 0 ? (
+          <EmptyState message="Henüz ilan/teklif bildirimin yok." />
+        ) : (
+          <FlatList
+            data={jobs}
+            keyExtractor={(r) => r.notification_id}
+            renderItem={renderJob}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}

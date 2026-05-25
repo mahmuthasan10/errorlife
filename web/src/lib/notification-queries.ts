@@ -7,6 +7,7 @@ import type {
   FollowNotificationRow,
   MessageNotificationRow,
 } from "@/types/database";
+import type { JobNotificationRow } from "@errorlife/shared/types";
 
 const NOTIFICATIONS_LIMIT = 20;
 
@@ -113,4 +114,24 @@ export async function getMessageNotifications(): Promise<MessageNotificationRow[
     ...row,
     unread_count: Number(row.unread_count),
   }));
+}
+
+/**
+ * İlanlar sekmesi: BID + BID_ACCEPTED + BID_REJECTED tipleri,
+ * jobs.title ile birlikte tek liste hâlinde.
+ */
+export async function getJobNotifications(): Promise<JobNotificationRow[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) return [];
+
+  const { data, error } = await supabase.rpc("get_job_notifications");
+
+  if (error || !data) return [];
+
+  return data as JobNotificationRow[];
 }

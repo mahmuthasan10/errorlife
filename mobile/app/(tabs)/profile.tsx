@@ -80,11 +80,19 @@ export default function ProfileScreen() {
   }, [router]);
 
   const handleComment = useCallback((postId: string) => router.push(`/post/${postId}/comments`), [router]);
-  const handlePostPress = useCallback((postId: string) => router.push(`/post/${postId}/comments`), [router]);
+  const handlePostPress = useCallback((postId: string) => router.push(`/post/${postId}`), [router]);
+  const handleProfilePress = useCallback((username: string) => router.push(`/profile/${username}`), [router]);
 
   const renderItem = useCallback(({ item }: { item: PostWithAuthor }) => (
-    <PostCard post={item} onLike={toggleLike} onBookmark={toggleBookmark} onComment={handleComment} onPress={handlePostPress} />
-  ), [toggleLike, toggleBookmark, handleComment, handlePostPress]);
+    <PostCard
+      post={item}
+      onLike={toggleLike}
+      onBookmark={toggleBookmark}
+      onComment={handleComment}
+      onPress={handlePostPress}
+      onProfilePress={handleProfilePress}
+    />
+  ), [toggleLike, toggleBookmark, handleComment, handlePostPress, handleProfilePress]);
 
   const keyExtractor = useCallback((item: PostWithAuthor) => item.id, []);
 

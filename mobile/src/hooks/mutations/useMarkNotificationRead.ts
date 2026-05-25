@@ -1,9 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { InteractionNotificationRow, FollowNotificationRow } from "@errorlife/shared/types";
+import type {
+  InteractionNotificationRow,
+  FollowNotificationRow,
+  JobNotificationRow,
+} from "@errorlife/shared/types";
 import {
   markCommentNotificationRead,
   markLikeNotificationsRead,
   markFollowNotificationRead,
+  markJobNotificationRead,
 } from "../../lib/queries/notifications";
 import { notificationKeys } from "../queries/useNotifications";
 import { useAuth } from "../../providers/AuthProvider";
@@ -71,6 +76,35 @@ export function useMarkFollowRead() {
         queryClient.setQueryData(notificationKeys.follows(user.id), ctx.prev);
       }
       logger.error("mutation.mark_follow_read", { err: String(err) });
+    },
+  });
+}
+
+export function useMarkJobRead() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: (row: JobNotificationRow) =>
+      markJobNotificationRead(row.notification_id),
+    onMutate: async (row) => {
+      if (!user) return;
+      const key = notificationKeys.jobs(user.id);
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<JobNotificationRow[]>(key);
+
+      queryClient.setQueryData<JobNotificationRow[]>(key, (old = []) =>
+        old.map((r) =>
+          r.notification_id === row.notification_id ? { ...r, is_read: true } : r
+        )
+      );
+      return { prev };
+    },
+    onError: (err, _row, ctx) => {
+      if (ctx?.prev && user) {
+        queryClient.setQueryData(notificationKeys.jobs(user.id), ctx.prev);
+      }
+      logger.error("mutation.mark_job_read", { err: String(err) });
     },
   });
 }

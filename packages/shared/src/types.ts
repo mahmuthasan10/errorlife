@@ -102,7 +102,14 @@ export type Message = {
   created_at: string;
 };
 
-export type NotificationType = "FOLLOW" | "BID" | "MESSAGE" | "LIKE" | "COMMENT";
+export type NotificationType =
+  | "FOLLOW"
+  | "BID"
+  | "MESSAGE"
+  | "LIKE"
+  | "COMMENT"
+  | "BID_ACCEPTED"
+  | "BID_REJECTED";
 
 export type Notification = {
   id: string;
@@ -198,4 +205,23 @@ export type MessageNotificationRow = {
   last_message_content: string | null;
   last_message_at: string | null;
   unread_count: number;
+};
+
+/**
+ * get_job_notifications() RPC dönüş tipi.
+ * BID         → ilan sahibine "yeni teklif"
+ * BID_ACCEPTED → teklif sahibine "teklifin kabul edildi"
+ * BID_REJECTED → teklif sahibine "teklifin reddedildi"
+ */
+export type JobNotificationRow = {
+  notification_id: string;
+  type: "BID" | "BID_ACCEPTED" | "BID_REJECTED";
+  is_read: boolean;
+  created_at: string;
+  job_id: string;
+  job_title: string;
+  actor_id: string;
+  actor_display_name: string;
+  actor_username: string;
+  actor_avatar_url: string | null;
 };

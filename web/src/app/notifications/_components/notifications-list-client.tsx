@@ -9,6 +9,9 @@ import {
   UserPlus,
   MessageCircle,
   Bell,
+  Briefcase,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { markAsRead } from "@/app/actions/notifications";
 import { createClient } from "@/utils/supabase/client";
@@ -17,6 +20,7 @@ import type {
   FollowNotificationRow,
   MessageNotificationRow,
 } from "@/types/database";
+import type { JobNotificationRow } from "@errorlife/shared/types";
 
 // ── Yardımcı ─────────────────────────────────────────────────
 
@@ -61,12 +65,13 @@ function UnreadDot() {
 
 // ── Tab ───────────────────────────────────────────────────────
 
-type Tab = "interactions" | "follows" | "messages";
+type Tab = "interactions" | "follows" | "messages" | "jobs";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "interactions", label: "Etkileşimler" },
   { id: "follows", label: "Takipler" },
   { id: "messages", label: "Mesajlar" },
+  { id: "jobs", label: "İlanlar" },
 ];
 
 // ── Etkileşim Satırı ──────────────────────────────────────────
@@ -228,6 +233,79 @@ function MessageRow({ row }: { row: MessageNotificationRow }) {
   );
 }
 
+// ── İlan Satırı ───────────────────────────────────────────────
+
+function JobRow({ row }: { row: JobNotificationRow }) {
+  const [isPending, startTransition] = useTransition();
+
+  const { Icon, iconClass, actionText } = (() => {
+    switch (row.type) {
+      case "BID_ACCEPTED":
+        return {
+          Icon: CheckCircle2,
+          iconClass: "text-emerald-400",
+          actionText: "teklifini kabul etti.",
+        };
+      case "BID_REJECTED":
+        return {
+          Icon: XCircle,
+          iconClass: "text-red-400",
+          actionText: "teklifini reddetti.",
+        };
+      default:
+        return {
+          Icon: Briefcase,
+          iconClass: "text-cyan-400",
+          actionText: "ilanına teklif verdi.",
+        };
+    }
+  })();
+
+  function handleRead() {
+    if (!row.is_read) {
+      startTransition(() => {
+        void markAsRead(row.notification_id);
+      });
+    }
+  }
+
+  return (
+    <Link
+      href={`/jobs/${row.job_id}`}
+      onClick={handleRead}
+      className={`flex w-full items-start gap-3 border-b border-zinc-800 px-4 py-3 transition-colors hover:bg-zinc-900/50 ${
+        !row.is_read ? "bg-blue-500/10" : ""
+      } ${isPending ? "opacity-60" : ""}`}
+    >
+      <div className="relative flex-shrink-0">
+        <Avatar
+          url={row.actor_avatar_url}
+          name={row.actor_display_name}
+          className="h-10 w-10 rounded-full object-cover"
+        />
+        <span
+          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black ${iconClass}`}
+        >
+          <Icon className="h-3 w-3" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-[#e7e9ea]">
+          <span className="font-bold">{row.actor_display_name}</span>{" "}
+          {actionText}
+        </p>
+        {row.job_title && (
+          <p className="mt-0.5 truncate text-sm text-zinc-400">
+            “{row.job_title}”
+          </p>
+        )}
+        <span className="text-xs text-zinc-500">{timeAgo(row.created_at)}</span>
+      </div>
+      {!row.is_read && <UnreadDot />}
+    </Link>
+  );
+}
+
 // ── Boş Durum ─────────────────────────────────────────────────
 
 function EmptyState({ message }: { message: string }) {
@@ -247,12 +325,14 @@ interface Props {
   interactions: InteractionNotificationRow[];
   follows: FollowNotificationRow[];
   messages: MessageNotificationRow[];
+  jobs: JobNotificationRow[];
 }
 
 export default function NotificationsTabsClient({
   interactions,
   follows,
   messages,
+  jobs,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("interactions");
 
@@ -260,6 +340,7 @@ export default function NotificationsTabsClient({
     interactions: interactions.filter((r) => !r.is_read).length,
     follows: follows.filter((r) => !r.is_read).length,
     messages: messages.reduce((s, r) => s + r.unread_count, 0),
+    jobs: jobs.filter((r) => !r.is_read).length,
   };
 
   return (
@@ -330,6 +411,16 @@ export default function NotificationsTabsClient({
             <EmptyState message="Henüz mesajlaşman yok." />
           ) : (
             messages.map((row) => <MessageRow key={row.chat_id} row={row} />)
+          )}
+        </div>
+      )}
+
+      {activeTab === "jobs" && (
+        <div>
+          {jobs.length === 0 ? (
+            <EmptyState message="Henüz ilan/teklif bildirimin yok." />
+          ) : (
+            jobs.map((row) => <JobRow key={row.notification_id} row={row} />)
           )}
         </div>
       )}

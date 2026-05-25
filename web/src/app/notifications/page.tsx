@@ -4,6 +4,7 @@ import {
   getInteractionNotifications,
   getFollowNotifications,
   getMessageNotifications,
+  getJobNotifications,
 } from "@/lib/notification-queries";
 import NotificationsTabsClient from "./_components/notifications-list-client";
 
@@ -19,11 +20,12 @@ export default async function NotificationsPage() {
 
   if (!user) redirect("/login");
 
-  // 3 veri kaynağını paralel çek — sunucu tarafında tek round-trip
-  const [interactions, follows, messages] = await Promise.all([
+  // 4 veri kaynağını paralel çek — sunucu tarafında tek round-trip
+  const [interactions, follows, messages, jobs] = await Promise.all([
     getInteractionNotifications(),
     getFollowNotifications(),
     getMessageNotifications(),
+    getJobNotifications(),
   ]);
 
   return (
@@ -36,6 +38,7 @@ export default async function NotificationsPage() {
         interactions={interactions}
         follows={follows}
         messages={messages}
+        jobs={jobs}
       />
     </div>
   );

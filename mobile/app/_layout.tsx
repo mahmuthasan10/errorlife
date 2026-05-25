@@ -89,6 +89,14 @@ function RootLayoutNav() {
           name="jobs/[id]/index"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="search/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="profile/[username]/index"
+          options={{ headerShown: false }}
+        />
       </Stack>
 
       {isLoading && (
