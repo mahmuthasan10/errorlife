@@ -4,15 +4,15 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "web",
-    "mobile"
+    "web"
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace=web",
     "build:web": "npm run build --workspace=web",
     "build": "npm run build --workspace=web",
     "vercel-build": "npm run build --workspace=web",
-    "dev:mobile": "npm run start --workspace=mobile",
+    "dev:mobile": "npm --prefix mobile start",
+    "install:mobile": "npm --prefix mobile install --legacy-peer-deps",
     "lint": "npm run lint --workspace=web"
   },
   "engines": {
@@ -21,8 +21,7 @@
   },
   "overrides": {
     "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "react-native": "0.83.6"
+    "react-dom": "19.2.0"
   },
   "dependencies": {
     "semver": "^7.8.1"

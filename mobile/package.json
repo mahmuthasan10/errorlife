@@ -10,7 +10,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@errorlife/shared": "*",
+    "@errorlife/shared": "file:../packages/shared",
     "@expo/metro-runtime": "~55.0.10",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
