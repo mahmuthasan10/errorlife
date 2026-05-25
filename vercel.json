@@ -3,11 +3,5 @@
   "buildCommand": "npm run build --workspace=web",
   "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "web/.next",
-  "framework": "nextjs",
-  "build": {
-    "env": {
-      "NODE_OPTIONS": "--max-old-space-size=6144",
-      "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  }
+  "framework": "nextjs"
 }
