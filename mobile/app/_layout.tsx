@@ -1,27 +1,45 @@
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "../src/providers/AuthProvider";
 import SplashScreenView from "../src/components/SplashScreen";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { registerPushToken } from "../src/lib/push";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30_000,
+    },
+  },
+});
 
 function RootLayoutNav() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, user } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const pushRegistered = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
-
     const inAuthGroup = segments[0] === "(auth)";
-
     if (!session && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
       router.replace("/(tabs)");
     }
   }, [session, isLoading, segments, router]);
+
+  useEffect(() => {
+    if (user && !pushRegistered.current) {
+      pushRegistered.current = true;
+      void registerPushToken(user.id);
+    }
+  }, [user]);
 
   return (
     <View className="flex-1 bg-black">
@@ -43,12 +61,7 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="post/[id]/comments"
-          options={{
-            presentation: "formSheet",
-            headerShown: false,
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 20,
-          }}
+          options={{ headerShown: false, presentation: "card" }}
         />
         <Stack.Screen
           name="messages"
@@ -89,12 +102,13 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="light" />
-      <RootLayoutNav />
-    </AuthProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <RootLayoutNav />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
-// export const unstable_settings = {
-//   initialRouteName: "(auth)/login",
-// };

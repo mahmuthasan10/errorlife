@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../src/lib/supabase";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { formatTimeAgo } from "../../../src/utils/format-time";
-import type { CommentWithAuthor } from "../../../src/types/database";
+import type { CommentWithAuthor } from "@errorlife/shared/types";
 
 export default function CommentsModal() {
   const { id: postId } = useLocalSearchParams<{ id: string }>();
@@ -88,7 +88,10 @@ export default function CommentsModal() {
         username,
         display_name: displayName,
         avatar_url: null,
+        cover_url: null,
         bio: null,
+        followers_count: 0,
+        following_count: 0,
         created_at: "",
         updated_at: "",
       },

@@ -25,7 +25,7 @@ export default function JobCard({ job, onPress }: JobCardProps) {
     >
       <View className="flex-row justify-between items-start mb-2">
         <View className="flex-row items-center flex-1">
-          <Avatar uri={job.profiles?.avatar_url} size={32} fallback={job.profiles?.display_name?.[0] || "?"} />
+          <Avatar uri={job.profiles?.avatar_url ?? null} size={32} fallback={job.profiles?.display_name?.[0] ?? "?"} />
           <View className="ml-3">
             <Text className="text-white font-bold">{job.profiles?.display_name}</Text>
             <Text className="text-zinc-500 text-xs">

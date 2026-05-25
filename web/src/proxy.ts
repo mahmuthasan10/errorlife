@@ -14,6 +14,6 @@ export const config = {
      * - favicon.ico (favicon dosyası)
      * - Genel statik dosyalar (svg, png, jpg, vb.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

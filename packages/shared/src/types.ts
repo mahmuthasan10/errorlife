@@ -124,7 +124,7 @@ export type PostWithAuthor = Post & {
 };
 
 export type JobWithAuthor = Job & {
-  profiles: Profile;
+  profiles: Profile | null;
   job_tags: { tags: Tag }[];
 };
 

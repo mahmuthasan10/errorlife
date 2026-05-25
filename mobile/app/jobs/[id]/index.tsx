@@ -17,7 +17,7 @@ import { supabase } from "../../../src/lib/supabase";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import Avatar from "../../../src/components/ui/Avatar";
 import { formatTimeAgo } from "../../../src/utils/format-time";
-import type { JobWithAuthor } from "../../../src/types/database";
+import type { JobWithAuthor } from "@errorlife/shared/types";
 import type { BidWithExpert as Bid } from "@errorlife/shared/types";
 
 const STATUS_CONFIG = {
@@ -425,8 +425,9 @@ export default function JobDetailScreen() {
   const JobHeader = useCallback(() => {
     if (!job) return null;
 
-    const status = STATUS_CONFIG[job.status];
+    const status = STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG];
     const { profiles } = job;
+    if (!profiles) return null;
 
     return (
       <View>

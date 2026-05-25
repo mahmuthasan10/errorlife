@@ -54,7 +54,7 @@ export default function FeedScreen() {
   );
 
   const handlePostPress = useCallback(
-    (postId: string) => router.push(`/post/${postId}/comments`),
+    (postId: string) => router.push(`/post/${postId}`),
     [router]
   );
 
